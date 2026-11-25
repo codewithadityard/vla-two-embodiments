@@ -1,0 +1,11 @@
+# Project rules
+- This is a robot-learning research project (VLA + world models) on a laptop: Windows + WSL2 Ubuntu, RTX 4060 8 GB. Long runs go to Kaggle (Linux, T4/P100).
+- Before writing code for any task, propose a short plan and wait for my approval.
+- Work one milestone at a time. Don't start the next until its checks pass and I approve.
+- Explain each command before running it. If a command needs sudo, tell me and I'll run it myself.
+- Seed all randomness from config files. Same seed must give the same result.
+- NEVER invent or estimate results. Every number must come from a logged run.
+- Log deviations from papers or plans in docs/deviations.md.
+- Keep code small and readable. I must be able to explain every line.
+- If something fails, stop and report it. Don't silently work around it.
+- Never commit data/, checkpoints/, outputs/ or mlruns/.
