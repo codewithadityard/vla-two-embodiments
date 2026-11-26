@@ -17,7 +17,7 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-26 22:38 | `vla-m34` v3 (`7d3e47d`) | M3+M4 rerun 2: 7/10 PASS; real-data overfits FAIL (C 0.0313, A 0.3694), worker A smoke eval crashed (EGL device id 1 with CUDA_VISIBLE_DEVICES=1) | T4 x2 | 29.8 | `results/m34_checks.md` |
 | 2026-11-26 22:57 | `vla-toy` v1 (`a310994`) | Flow toy test (bimodal 2-D): 3/3 PASS (45.7 % / 52.8 %, middle 1.5 %); plot not returned (gitignored) | CPU (no GPU quota) | 2.8 | `results/flow_toy.md` |
 
-| 2026-11-26 23:02 | `vla-toy` v2 (`b5c5114`) | Flow toy test rerun to return the plot: 3/3 PASS (45.5 % / 52.9 %, middle 1.6 %; same training loss as v1, samples differ by 0.1-0.2 points, likely CPU numerics on a different Kaggle machine) | CPU (no GPU quota) | ~2.8 | `results/flow_toy.md`, `results/flow_toy.png` |
+| 2026-11-26 23:02 | `vla-toy` v2 (`b5c5114`) | Flow toy test rerun to return the plot: 3/3 PASS (45.5 % / 52.9 %, middle 1.6 %; same training loss as v1, samples differ by 0.1-0.2 points, likely CPU numerics on a different Kaggle machine) | CPU (no GPU quota) | 3.0 | `results/flow_toy.md`, `results/flow_toy.png` |
 
 
 **GPU total used: 269.6 min (4.5 h) + R1b pending** (CPU runs not counted).
