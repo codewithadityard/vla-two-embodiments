@@ -15,7 +15,10 @@ from minivla.heads import FlowMatchingHead, RegressionHead, masked_mean
 
 
 def setup_determinism():
-    """Same seed -> same result on the same GPU. Call before any CUDA work."""
+    """Same seed -> same result on the same GPU. Call before any CUDA work.
+    MINIVLA_GPU (set by minivla/parallel.py) picks the GPU this process uses."""
+    if os.environ.get("MINIVLA_GPU") is not None:
+        torch.cuda.set_device(int(os.environ["MINIVLA_GPU"]))
     os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     torch.use_deterministic_algorithms(True, warn_only=True)  # warn (in the log) instead of crashing a long run
     torch.backends.cudnn.benchmark = False

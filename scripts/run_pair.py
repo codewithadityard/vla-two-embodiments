@@ -1,5 +1,5 @@
 """Two models at once on Kaggle's T4 x2: each scripts.train_eval run gets its own GPU
-(CUDA_VISIBLE_DEVICES), so its numbers are the same as if it ran alone.
+(MINIVLA_GPU -> torch.cuda.set_device), so its numbers are the same as if it ran alone.
 
   python -m scripts.run_pair configs/runs/A_s0.yaml configs/runs/C_s0.yaml
 

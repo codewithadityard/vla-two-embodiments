@@ -1,4 +1,4 @@
-"""M3 + M4 in one Kaggle GPU run (T4 x2): torch unit tests, real-feature overfit (+ diagnostics),
+"""M3 + M4 in one Kaggle GPU run (T4 x2): torch unit tests, real-feature overfit,
 determinism, two short runs at once (one per GPU, as the real runs will go) with a smoke eval each,
 and the step-count rule S measured under that load.
 
@@ -19,58 +19,56 @@ import torch
 from minivla.config import load_config, seed_everything
 from minivla.heads import masked_mean
 from minivla.parallel import run_parallel
-from minivla.train import make_expert_and_head, prepare, setup_determinism, train, zero_baseline_l1
+from minivla.train import lr_factor, make_expert_and_head, prepare, setup_determinism, train, zero_baseline_l1
 
 REPORT = Path("results/m34_checks.md")
 CFG_A, CFG_C = "configs/A_flow_lang.yaml", "configs/C_l1_lang.yaml"
-# How each overfit variant trains. "fp16_scaled" is the official check: the same mixed-precision mechanics
-# as minivla/train.py (fp16 autocast + GradScaler + grad clipping). The first M3+M4 run used "fp16"
-# (autocast without GradScaler), where small fp16 gradients can underflow to zero.
-PRECISIONS = ["fp16_scaled", "fp16", "fp32"]
+OVERFIT_LR = 1e-3
+# (head, config, steps, L1 threshold). Thresholds are the approved ones; steps and the LR schedule were
+# changed after the second M3+M4 run (approved 2026-11-26, see docs/deviations.md).
+OVERFIT = [("C (L1)", CFG_C, 3000, 0.02), ("A (flow)", CFG_A, 10000, 0.05)]
 
 
-def overfit_real(cfg, d, rows, steps, precision="fp16_scaled", fixed_noise=False):
-    """Fit 8 fixed real samples (dropout 0, lr 1e-3). Returns final train loss (mean of the last 100 steps)
-    and the masked L1 of the prediction (flow: 10 and 50 Euler steps, fixed sampling noise).
-    fixed_noise (flow only): the same noise and time every step, so a memorizing model drives the loss to ~0."""
+def overfit_real(cfg, d, rows, steps, curve_every=500):
+    """Fit 8 fixed real samples (dropout 0) with the training's mechanics: fp16 autocast + GradScaler +
+    grad clipping, and the training's LR schedule shape (linear warm-up over train.warmup steps, cosine decay
+    to the same final/peak ratio), peak lr 1e-3. Returns the loss curve (mean of the last 100 steps, every
+    `curve_every` steps) and the masked L1 of the prediction (flow: 10 and 50 Euler steps, fixed noise)."""
     cfg = copy.deepcopy(cfg)
     cfg["model"]["dropout"] = 0.0
-    flow = cfg["head"] == "flow"
+    tr, flow = cfg["train"], cfg["head"] == "flow"
     torch.manual_seed(0)
     expert, head = make_expert_and_head(cfg, d.n_prefix + d.n_text, d.dim)
     expert = expert.to(d.device).train()
-    opt = torch.optim.AdamW(expert.parameters(), lr=1e-3)
-    scaled, amp = precision == "fp16_scaled", precision != "fp32"
-    scaler = torch.amp.GradScaler("cuda", enabled=scaled)
+    opt = torch.optim.AdamW(expert.parameters(), lr=OVERFIT_LR)
+    final = OVERFIT_LR * tr["final_lr"] / tr["lr"]
+    sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda i: lr_factor(i, tr["warmup"], steps, OVERFIT_LR, final))
+    scaler = torch.amp.GradScaler("cuda")
     feats, mask, state, actions, pad = d.batch(rows)
-    if not amp:
-        feats = feats.float()
-    extra = {}
-    if fixed_noise:
-        torch.manual_seed(1)
-        extra = {"noise": torch.randn(actions.shape, device=d.device), "t": head.sample_time(len(rows), d.device)}
-    losses = []
-    for _ in range(steps):
-        with torch.autocast("cuda", dtype=torch.float16, enabled=amp):
-            loss = head.loss(expert, feats, mask, state, actions, pad, **extra)
+    losses, curve = [], []
+    for step in range(1, steps + 1):
+        with torch.autocast("cuda", dtype=torch.float16):
+            loss = head.loss(expert, feats, mask, state, actions, pad)
         opt.zero_grad(set_to_none=True)
         scaler.scale(loss).backward()
-        if scaled:
-            scaler.unscale_(opt)
-            torch.nn.utils.clip_grad_norm_(expert.parameters(), cfg["train"]["grad_clip"])
+        scaler.unscale_(opt)
+        torch.nn.utils.clip_grad_norm_(expert.parameters(), tr["grad_clip"])
         scaler.step(opt)
         scaler.update()
+        sched.step()
         losses.append(loss.item())
+        if step % curve_every == 0:
+            curve.append((step, float(np.mean(losses[-100:]))))
     expert.eval()
 
     def l1(euler_steps=None):
         g = torch.Generator(device=d.device).manual_seed(0)
-        with torch.no_grad(), torch.autocast("cuda", dtype=torch.float16, enabled=amp):
+        with torch.no_grad(), torch.autocast("cuda", dtype=torch.float16):
             kw = {"steps": euler_steps} if flow else {}
             pred = head.predict(expert, feats, mask, state, generator=g, **kw)
         return masked_mean((pred.float() - actions).abs(), pad).item()
 
-    return {"loss_end": float(np.mean(losses[-100:])), "l1": l1(), "l1_50": l1(50) if flow else None}
+    return {"first_loss": losses[0], "curve": curve, "l1": l1(), "l1_50": l1(50) if flow else None}
 
 
 def main():
@@ -103,20 +101,15 @@ def main():
     baseline = zero_baseline_l1(d, val_rows)
     cache_info = d.describe()
 
-    # 3. overfit 8 real samples: official check + diagnostic variants
+    # 3. overfit 8 real samples (thresholds unchanged)
     rows8 = np.sort(np.random.default_rng(0).choice(train_rows, 8, replace=False))
-    overfit_rows = []
-    for name, cfg, steps in [("C (L1)", cfg_c, 1000), ("A (flow)", cfg_a, 3000)]:
-        variants = [(p, False) for p in PRECISIONS] + ([("fp16_scaled", True)] if cfg["head"] == "flow" else [])
-        for precision, fixed in variants:
-            r = overfit_real(cfg, d, rows8, steps, precision, fixed)
-            overfit_rows.append((name, steps, precision + (", fixed noise and t" if fixed else ""), r))
-            print("overfit", name, precision, "fixed" if fixed else "", r, flush=True)
-    off = {n: r for n, _, v, r in overfit_rows if v == "fp16_scaled"}
-    check("regression head overfits 8 real samples (L1 < 0.02 after 1000 steps; fp16 + GradScaler + clip)",
-          off["C (L1)"]["l1"] < 0.02, f"L1 {off['C (L1)']['l1']:.4f}")
-    check("flow head overfits 8 real samples (10-step sample L1 < 0.05 after 3000 steps; fp16 + GradScaler + clip)",
-          off["A (flow)"]["l1"] < 0.05, f"L1 {off['A (flow)']['l1']:.4f}")
+    overfit_res = {}
+    for name, path, steps, limit in OVERFIT:
+        r = overfit_real(load_config(path), d, rows8, steps)
+        overfit_res[name] = (steps, limit, r)
+        print("overfit", name, r, flush=True)
+        check(f"{name} overfits 8 real samples (L1 < {limit} after {steps} steps; training mechanics + LR schedule)",
+              r["l1"] < limit, f"L1 {r['l1']:.4f}" + (f" (50 Euler steps: {r['l1_50']:.4f})" if r["l1_50"] else ""))
 
     # 4. determinism on the GPU: same seed -> identical losses
     h1 = train(cfg_a, d, train_rows, val_rows, 50, "outputs/m34/det1.csv", seed=0, log_every=10)[2]
@@ -162,10 +155,12 @@ def main():
          f"mean-chunk baseline val L1: {baseline:.4f}", "", "## Checks", "",
          "| Check | Result | Detail |", "|---|---|---|"]
     L += [f"| {n} | {'PASS' if ok else '**FAIL**'} | {dt} |" for n, ok, dt in checks]
-    L += ["", "## Overfit 8 real samples: all variants (official check = fp16_scaled)", "",
-          "| Head | Steps | Training | Final train loss | L1 (10 Euler steps) | L1 (50 Euler steps) |", "|---|---|---|---|---|---|"]
-    fmt = lambda x: "–" if x is None else f"{x:.4f}"
-    L += [f"| {n} | {s} | {v} | {fmt(r['loss_end'])} | {fmt(r['l1'])} | {fmt(r['l1_50'])} |" for n, s, v, r in overfit_rows]
+    for name, (steps, limit, r) in overfit_res.items():
+        L += ["", f"## Overfit 8 real samples, {name}: {steps} steps, peak lr {OVERFIT_LR}, threshold L1 < {limit}", "",
+              f"Loss at step 1: {r['first_loss']:.4f}. Final L1: {r['l1']:.4f}" +
+              (f" (10 Euler steps), {r['l1_50']:.4f} (50 Euler steps)" if r["l1_50"] else "") + ".", "",
+              "| Step | Train loss (mean of last 100 steps) |", "|---|---|"]
+        L += [f"| {st} | {v:.4f} |" for st, v in r["curve"]]
     L += ["", "## Diagnostics (not checks)", ""] + [f"- {n}: {v}" for n, v in diag]
     for tag, r in res.items():
         L += ["", f"## Short run {tag} (both at once, one per GPU): {r['history'][-1][0]} steps, batch "

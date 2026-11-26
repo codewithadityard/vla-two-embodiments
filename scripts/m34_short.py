@@ -38,7 +38,7 @@ def main(cfg_path, tag):
     t = time.time()
     rows = evaluate(cfg, Policy(cfg, expert, head, bb, n_text, stats), f"smoke_{tag}", out / f"smoke_{tag}.csv",
                     out / f"videos_{tag}", tasks=SMOKE_TASKS, episodes=SMOKE_EPISODES)
-    res = {"tag": tag, "gpu": torch.cuda.get_device_name(0), "history": hist, "baseline": baseline,
+    res = {"tag": tag, "gpu": torch.cuda.get_device_name(), "history": hist, "baseline": baseline,
            "cache": cache_info, "prefix_len_online": bb.prefix_len, "prefix_len_cache": n_prefix,
            "smoke_rows": rows, "smoke_min": (time.time() - t) / 60}
     (out / f"short_{tag}.json").write_text(json.dumps(res, indent=1))
