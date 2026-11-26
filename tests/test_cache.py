@@ -9,8 +9,9 @@ def test_round_trip_with_text_padding(tmp_path):
     arrays = cache.create(tmp_path, n_rows=5, n_prefix=3, n_text=4, dim=2, meta={"note": "toy"})
     p1, t1 = rng.standard_normal((2, 3, 2)), rng.standard_normal((2, 4, 2))  # full-length text
     p2, t2 = rng.standard_normal((3, 3, 2)), rng.standard_normal((3, 2, 2))  # shorter text
-    cache.write_rows(arrays, 0, p1, t1, np.ones((2, 4), bool), [10, 11])
-    cache.write_rows(arrays, 2, p2, t2, np.ones((3, 2), bool), [12, 13, 14])
+    assert (arrays["frame_index"] == -1).all()  # nothing written yet
+    cache.write_rows(arrays, [2, 3, 4], p2, t2, np.ones((3, 2), bool), [12, 13, 14])  # out of order
+    cache.write_rows(arrays, [0, 1], p1, t1, np.ones((2, 4), bool), [10, 11])
     for a in arrays.values():
         a.flush()
     del arrays

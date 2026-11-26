@@ -22,20 +22,24 @@ def create(cache_dir, n_rows, n_prefix, n_text, dim, meta: dict) -> dict:
               "text_mask": (n_rows, n_text), "frame_index": (n_rows,)}
     arrays = {k: np.lib.format.open_memmap(d / f"{k}.npy", mode="w+", dtype=SPECS[k], shape=shapes[k])
               for k in SPECS}
+    arrays["frame_index"][:] = -1  # -1 = row not written yet
     sizes = dict(n_rows=n_rows, n_prefix=n_prefix, n_text=n_text, dim=dim)
     (d / "meta.json").write_text(json.dumps({**meta, **sizes}, indent=2))
     return arrays
 
 
-def write_rows(arrays, start, prefix, text, text_mask, frame_index):
-    """Write a batch at rows [start, start + B). Text shorter than n_text is zero-padded."""
-    b, t = text.shape[:2]
-    rows = slice(start, start + b)
+def write_rows(arrays, rows, prefix, text, text_mask, frame_index):
+    """Write a batch into the given row numbers (batches may arrive in any order).
+    Text shorter than n_text is zero-padded."""
+    rows = np.asarray(rows)
+    t = text.shape[1]
+    text_full = np.zeros((len(rows),) + arrays["text"].shape[1:], dtype=np.float16)
+    mask_full = np.zeros((len(rows), arrays["text_mask"].shape[1]), dtype=bool)
+    text_full[:, :t] = text
+    mask_full[:, :t] = text_mask
     arrays["prefix"][rows] = prefix
-    arrays["text"][rows] = 0
-    arrays["text"][rows, :t] = text
-    arrays["text_mask"][rows] = False
-    arrays["text_mask"][rows, :t] = text_mask
+    arrays["text"][rows] = text_full
+    arrays["text_mask"][rows] = mask_full
     arrays["frame_index"][rows] = frame_index
 
 

@@ -150,14 +150,25 @@ def main():
     task_ids = sorted(tasks)
     n_frames = len(frames["index"])
 
-    # 2. env vs data
+    # 2. env vs data. Env and dataset number the tasks differently, so tasks are matched by instruction text
+    #    (approved after R1); the policy only ever sees the text.
     env = env_observations(cfg["env"]["suite"], task_ids, cfg["seed"])
     obs_keys = list(env[task_ids[0]][1])
+    env_by_text = {text: e for e, (text, _) in env.items()}
+    check("env instructions == dataset instructions as a set (exact strings)",
+          set(env_by_text) == set(tasks.values()) and len(env_by_text) == len(tasks),
+          f"only in env: {sorted(set(env_by_text) - set(tasks.values()))}; "
+          f"only in data: {sorted(set(tasks.values()) - set(env_by_text))}")
     env_rows = []
-    all_text, all_orient, all_state = True, True, True
+    all_orient, all_state = True, True
     first = frames["frame_index"] == 0
     for t in task_ids:
-        text, obs = env[t]
+        if tasks[t] not in env_by_text:
+            env_rows.append([t, "none", tasks[t], "", "", "", "", ""])
+            all_orient = all_state = False
+            continue
+        e = env_by_text[tasks[t]]
+        _, obs = env[e]
         e_main = as_hwc_uint8(obs[find_key(obs, lambda k: k.endswith("image"))])
         e_wrist = as_hwc_uint8(obs[find_key(obs, lambda k: k.endswith("image2"))])
         e_state = np.asarray(obs[find_key(obs, lambda k: "state" in k or "agent_pos" in k)]).squeeze()
@@ -167,12 +178,9 @@ def main():
              gray_corr(e_wrist, d_wrist), gray_corr(e_wrist[::-1, ::-1], d_wrist)]
         s0 = frames["state"][first & (frames["task_index"] == t)]
         ratio = np.abs(e_state - s0.mean(0)) / np.maximum(3 * s0.std(0), 0.01)
-        text_ok, orient_ok, state_ok = text == tasks[t], c[0] > c[1] and c[2] > c[3], ratio.max() <= 1
-        all_text &= text_ok
-        all_orient &= orient_ok
-        all_state &= state_ok
-        env_rows.append([t, "yes" if text_ok else f"NO: env says '{text}'", c[0], c[1], c[2], c[3], float(ratio.max())])
-    check("env instruction == dataset instruction (all tasks)", all_text)
+        all_orient &= c[0] > c[1] and c[2] > c[3]
+        all_state &= ratio.max() <= 1
+        env_rows.append([t, e, tasks[t], c[0], c[1], c[2], c[3], float(ratio.max())])
     check("env images (after LeRobot's flip) match dataset orientation (all tasks, both cameras)", all_orient)
     check("env reset state within dataset first-frame range (all tasks, all dims)", all_state,
           "per dim: |env - mean| <= max(3 std, 0.01) over the task's first frames")
@@ -213,11 +221,21 @@ def main():
     torch.cuda.empty_cache()
 
     # 5. one cache for A, B and C: prefix tokens don't depend on the instruction
+    #    Rule (approved after R1): exact math is tested in fp32 (max abs <= 1e-4); fp16 must reach cos >= 0.9999.
     pre_real, _, _ = bb.encode(mains, wrists, instr)
     pre_empty, _, _ = bb.encode(mains, wrists, [""] * len(task_ids))
     eq_abs, eq_cos = compare(pre_real, pre_empty)
-    check("prefix features with real == with empty instruction (max abs <= 1e-2, cos >= 0.9999)",
-          eq_abs <= 1e-2 and eq_cos >= 0.9999, f"max abs {eq_abs:.2e}, min cos {eq_cos:.6f}")
+    scale = pre_real.float().abs().max().item()
+    check("fp16: prefix features with real vs empty instruction, min cos >= 0.9999", eq_cos >= 0.9999,
+          f"max abs {eq_abs:.2e} (largest |feature| {scale:.1f}; relative {eq_abs / scale:.1e}), min cos {eq_cos:.6f}")
+    bb32 = Backbone(bcfg["name"], bcfg["revision"], bcfg["num_layers"], dtype=torch.float32)
+    p32_real, _, _ = bb32.encode(mains[:2], wrists[:2], instr[:2])
+    p32_empty, _, _ = bb32.encode(mains[:2], wrists[:2], ["", ""])
+    eq32_abs, eq32_cos = compare(p32_real, p32_empty)
+    check("fp32: prefix features with real vs empty instruction, max abs <= 1e-4 (2 frames)", eq32_abs <= 1e-4,
+          f"max abs {eq32_abs:.2e}, min cos {eq32_cos:.8f}")
+    del bb32
+    torch.cuda.empty_cache()
 
     # 6. storage
     dim = h_cut.shape[-1]
@@ -273,11 +291,13 @@ def main():
          f"- Env observation keys (after `canonical_observation`): {obs_keys}", "", "## Checks", ""]
     L += table(["Check", "Result", "Detail"], [[c, "PASS" if ok else "**FAIL**", d] for c, ok, d in checks])
     L += ["", "## Env vs data (init state 0, frame 0 of the first episode of each task)", "",
+          "Dataset and env number the tasks differently; each dataset task is paired with the env task that has "
+          "the same instruction text. "
           "Correlations are between grayscale images; orientation passes if the as-is correlation beats the "
           "180°-flipped one. State ratio = max over dims of |env - mean| / max(3 std, 0.01); must be <= 1. "
           f"Side-by-side images: `{OUT}/task*_env_vs_data.png` (env main | data main | env wrist | data wrist).", ""]
-    L += table(["Task", "Instruction match", "Main corr", "Main corr (flipped)", "Wrist corr", "Wrist corr (flipped)",
-                "State ratio"], env_rows)
+    L += table(["Data task", "Env task", "Instruction", "Main corr", "Main corr (flipped)", "Wrist corr",
+                "Wrist corr (flipped)", "State ratio"], env_rows)
     L += ["", "## Token layout", ""]
     L += table(["Item", "Value"], [
         ["Prefix tokens P (BOS, image wrappers, 2 x 64 image tokens)", P],
