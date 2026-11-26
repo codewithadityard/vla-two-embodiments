@@ -5,3 +5,6 @@ mlruns/
 results/*.png
 __pycache__/
 .pytest_cache/
+kaggle.json
+access_token
+.kaggle/

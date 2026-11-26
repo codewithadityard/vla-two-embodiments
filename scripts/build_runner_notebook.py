@@ -3,6 +3,7 @@
 Run from the repo root:  python -m scripts.build_runner_notebook
 """
 import json
+import pprint
 from pathlib import Path
 
 INTRO = """# Runner: one Kaggle notebook for every milestone
@@ -90,7 +91,7 @@ for rel in changed:
     shutil.copy(REPO / rel, dst)
 
 py = f"{sys.executable} -c"
-versions = out_of(f"""{py} 'import sys, torch; print("python", sys.version.split()[0], "| torch", torch.__version__, "| cuda", torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else "")'""")
+versions = out_of(f"""{py} 'import sys, torch; print("python", sys.version.split()[0], "| torch", torch.__version__, "| cuda", torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else "", "x", torch.cuda.device_count(), "| cpus", __import__("os").cpu_count())'""")
 lerobot = out_of(f"{py} 'import importlib.metadata as m; print(m.version(\\"lerobot\\"))'")
 
 S = ["===== RUN SUMMARY (paste this back) =====",
@@ -120,12 +121,23 @@ def cell(kind, src):
     return c
 
 
-nb = {
-    "cells": [cell("markdown", INTRO), cell("code", CONFIG), cell("code", SETUP), cell("code", INSTALL),
-              cell("code", RUN_CELL), cell("code", SUMMARY)],
-    "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
-                 "language_info": {"name": "python"}},
-    "nbformat": 4, "nbformat_minor": 5,
-}
-Path("notebooks/runner.ipynb").write_text(json.dumps(nb, indent=1) + "\n")
-print("wrote notebooks/runner.ipynb")
+def config_cell(run: dict) -> str:
+    """RUN cell with the given values (used by scripts/kaggle_run.py)."""
+    return ("# ---- written by scripts/kaggle_run.py ----\n"
+            f"RUN = {pprint.pformat(run, sort_dicts=False)}\n"
+            'REPO_URL = "https://github.com/codewithadityard/vla-two-embodiments.git"')
+
+
+def make_notebook(config_src: str = CONFIG) -> dict:
+    return {
+        "cells": [cell("markdown", INTRO), cell("code", config_src), cell("code", SETUP), cell("code", INSTALL),
+                  cell("code", RUN_CELL), cell("code", SUMMARY)],
+        "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+                     "language_info": {"name": "python"}},
+        "nbformat": 4, "nbformat_minor": 5,
+    }
+
+
+if __name__ == "__main__":
+    Path("notebooks/runner.ipynb").write_text(json.dumps(make_notebook(), indent=1) + "\n")
+    print("wrote notebooks/runner.ipynb")

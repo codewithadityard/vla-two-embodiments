@@ -15,3 +15,16 @@
 - All data, models, feature caches, training and evaluation run on Kaggle. Only small result files (md, json, small png) come back to the repo.
 - Any test that needs torch runs on Kaggle: a CPU session if no GPU is needed (saves GPU quota), otherwise GPU.
 - Kaggle runs use notebooks/runner.ipynb: it clones main at a given commit, installs pinned packages, runs one script, and prints a summary to paste back. Push to main before each run.
+
+# Kaggle CLI (approved 2026-11-26)
+- Claude may launch Kaggle runs and read their status with the kaggle CLI. The token is ~/.kaggle/access_token (KAGGLE_API_TOKEN): never copy it into the repo, never print it.
+- Only download small files (summary.md, results md/json). Never download the cache, checkpoints or other large outputs (mobile data).
+
+# One approval for M3-M6 (approved 2026-11-26)
+This replaces "one milestone at a time, approval each time" for M3-M6 only. Claude follows docs/IMPLEMENTATION_PLAN.md without waiting for approval between milestones, under these conditions:
+- Stop and report on any failed check.
+- Give a short summary after each run.
+- Keep docs/gpu_ledger.md updated.
+- Never change the approved plan, seeds or eval protocol without asking.
+- Never choose checkpoints using eval results.
+- Two Kaggle sessions at once are allowed if Kaggle permits it.
