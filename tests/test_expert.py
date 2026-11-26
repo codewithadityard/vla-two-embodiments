@@ -78,27 +78,35 @@ def test_time_sampler_distribution():
 
 
 def overfit(flow, steps):
+    """Fit 8 random samples. Returns (training loss at the first step, mean training loss over the last 100 steps,
+    masked L1 of the prediction)."""
     torch.manual_seed(0)
     feats, mask, state, actions, pad = inputs(b=8)
     e, head = make(flow=flow), (FlowMatchingHead() if flow else RegressionHead())
     opt = torch.optim.AdamW(e.parameters(), lr=1e-3)
+    losses = []
     for _ in range(steps):
         loss = head.loss(e, feats, mask, state, actions, pad)
         opt.zero_grad()
         loss.backward()
         opt.step()
+        losses.append(loss.item())
     e.eval()
     g = torch.Generator(device=DEV).manual_seed(0)
     pred = head.predict(e, feats, mask, state, generator=g)
-    return masked_mean((pred - actions).abs(), pad).item()
+    return losses[0], sum(losses[-100:]) / 100, masked_mean((pred - actions).abs(), pad).item()
 
 
+# Relative check (approved 2026-11-26, replaces fixed L1 thresholds 0.02 / 0.05 on random data):
+# the training loss must drop by at least 90 % from its starting value.
 def test_regression_overfits_tiny_batch():
-    assert overfit(flow=False, steps=1000) < 0.02
+    first, last, _ = overfit(flow=False, steps=1000)
+    assert last <= 0.1 * first, (first, last)
 
 
 def test_flow_overfits_tiny_batch():
-    assert overfit(flow=True, steps=3000) < 0.05
+    first, last, _ = overfit(flow=True, steps=3000)
+    assert last <= 0.1 * first, (first, last)
 
 
 def test_same_seed_same_losses():

@@ -88,10 +88,10 @@ def main():
     if p.returncode != 0:
         print(p.stdout[-3000:])
     from tests.test_expert import overfit as synthetic_overfit
-    diag.append(("synthetic overfit, regression, 3000 steps (test: 1000 steps, < 0.02)",
-                 f"L1 {synthetic_overfit(flow=False, steps=3000):.4f}"))
-    diag.append(("synthetic overfit, flow, 9000 steps (test: 3000 steps, < 0.05)",
-                 f"L1 {synthetic_overfit(flow=True, steps=9000):.4f}"))
+    for flow, steps in [(False, 1000), (True, 3000)]:
+        first, last, l1 = synthetic_overfit(flow=flow, steps=steps)
+        diag.append((f"synthetic overfit, {'flow' if flow else 'regression'}, {steps} steps",
+                     f"train loss {first:.4f} -> {last:.4f} ({100 * (1 - last / first):.1f} % drop); L1 {l1:.4f}"))
 
     # 2. data (A and C both use language, so one cache serves both)
     d, train_rows, val_rows, stats = prepare(cfg_a)
