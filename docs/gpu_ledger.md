@@ -14,5 +14,6 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-26 20:46 | `vla-m34` v1 (`200f696`) | M3+M4 checks: 3/7 PASS (unit-test overfits, real-data overfits and step count S FAIL; see results) | T4 x2 (one used) | 72.5 | `results/m34_checks.md` |
 | 2026-11-26 22:03 | `vla-unit` v1 (`491763e`) | torch unit tests with the relative overfit check: 9 passed | CPU (no GPU quota) | 3.0 | summary via CLI |
 | 2026-11-26 22:06 | `vla-m34` v2 (`106f576`) | M3+M4 rerun: crashed after the unit tests (old thresholds: 2 FAIL) on `from tests.test_expert import` (an installed `tests` package hides the repo's); fixed by loading the file by path | T4 x2 | 2.5 | summary via CLI |
+| 2026-11-26 22:38 | `vla-m34` v3 (`7d3e47d`) | M3+M4 rerun 2: 7/10 PASS; real-data overfits FAIL (C 0.0313, A 0.3694), worker A smoke eval crashed (EGL device id 1 with CUDA_VISIBLE_DEVICES=1) | T4 x2 | 29.8 | `results/m34_checks.md` |
 
-**GPU total used: 239.8 min (4.0 h) + R1b pending** (CPU runs not counted).
+**GPU total used: 269.6 min (4.5 h) + R1b pending** (CPU runs not counted).
