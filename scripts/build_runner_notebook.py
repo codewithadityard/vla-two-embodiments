@@ -82,7 +82,8 @@ RUN_MIN = round((time.time() - t) / 60, 1)
 (OUT / "log.txt").write_text("".join(lines))'''
 
 SUMMARY = '''# Copy results/ and docs/ files the script created or changed, so they can go back to the repo.
-changed = [l[3:] for l in out_of(f"git -C {REPO} status --porcelain --untracked-files=all -- results docs").splitlines()]
+# Each line is "XY path"; split instead of slicing, because out_of() strips the first line's leading space.
+changed = [l.split(maxsplit=1)[1] for l in out_of(f"git -C {REPO} status --porcelain --untracked-files=all -- results docs").splitlines()]
 for rel in changed:
     dst = OUT / "repo_files" / rel
     dst.parent.mkdir(parents=True, exist_ok=True)

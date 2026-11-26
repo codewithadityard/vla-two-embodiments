@@ -9,31 +9,32 @@ Generated on Kaggle by `python -m scripts.m2_probe` (via `notebooks/runner.ipynb
 
 | Check | Result | Detail |
 |---|---|---|
-| env instruction == dataset instruction (all tasks) | **FAIL** |  |
+| env instructions == dataset instructions as a set (exact strings) | PASS | only in env: []; only in data: [] |
 | env images (after LeRobot's flip) match dataset orientation (all tasks, both cameras) | PASS |  |
 | env reset state within dataset first-frame range (all tasks, all dims) | PASS | per dim: |env - mean| <= max(3 std, 0.01) over the task's first frames |
 | 128 image tokens per frame (2 x 64) | PASS | [128, 128, 128, 128, 128, 128, 128, 128, 128, 128] |
 | prompt tokens before the instruction are identical to the empty-instruction prompt | PASS | prefix length 134 |
 | full model has 32 LM layers; we keep the first 16 | PASS | full 32, kept 16 |
 | 16-layer output == final_norm(full hidden_states[16]) (max abs <= 1e-3) | PASS | max abs 0.00e+00, min cos 1.000000 |
-| prefix features with real == with empty instruction (max abs <= 1e-2, cos >= 0.9999) | **FAIL** | max abs 6.25e-02, min cos 0.999992 |
+| fp16: prefix features with real vs empty instruction, min cos >= 0.9999 | PASS | max abs 6.25e-02 (largest |feature| 24.8; relative 2.5e-03), min cos 0.999992 |
+| fp32: prefix features with real vs empty instruction, max abs <= 1e-4 (2 frames) | PASS | max abs 2.03e-05, min cos 0.99999988 |
 
 ## Env vs data (init state 0, frame 0 of the first episode of each task)
 
-Correlations are between grayscale images; orientation passes if the as-is correlation beats the 180°-flipped one. State ratio = max over dims of |env - mean| / max(3 std, 0.01); must be <= 1. Side-by-side images: `outputs/m2_probe/task*_env_vs_data.png` (env main | data main | env wrist | data wrist).
+Dataset and env number the tasks differently; each dataset task is paired with the env task that has the same instruction text. Correlations are between grayscale images; orientation passes if the as-is correlation beats the 180°-flipped one. State ratio = max over dims of |env - mean| / max(3 std, 0.01); must be <= 1. Side-by-side images: `outputs/m2_probe/task*_env_vs_data.png` (env main | data main | env wrist | data wrist).
 
-| Task | Instruction match | Main corr | Main corr (flipped) | Wrist corr | Wrist corr (flipped) | State ratio |
-|---|---|---|---|---|---|---|
-| 0 | NO: env says 'open the middle drawer of the cabinet' | 0.9405 | -0.2402 | 0.8201 | -0.219 | 0.5832 |
-| 1 | NO: env says 'put the bowl on the stove' | 0.9289 | -0.2426 | 0.7877 | -0.06629 | 0.8271 |
-| 2 | NO: env says 'put the wine bottle on top of the cabinet' | 0.8926 | -0.237 | 0.8331 | -0.01242 | 0.7192 |
-| 3 | NO: env says 'open the top drawer and put the bowl inside' | 0.9151 | -0.2358 | 0.792 | -0.03666 | 0.5242 |
-| 4 | NO: env says 'put the bowl on top of the cabinet' | 0.9157 | -0.2269 | 0.8534 | -0.006437 | 0.7615 |
-| 5 | yes | 0.9389 | -0.2394 | 0.8585 | -0.08207 | 0.5491 |
-| 6 | NO: env says 'put the cream cheese in the bowl' | 0.9069 | -0.2362 | 0.7086 | -0.1073 | 0.7729 |
-| 7 | NO: env says 'turn on the stove' | 0.9197 | -0.2332 | 0.8546 | -0.0645 | 0.6925 |
-| 8 | NO: env says 'put the bowl on the plate' | 0.938 | -0.234 | 0.8909 | -0.1061 | 0.3153 |
-| 9 | NO: env says 'put the wine bottle on the rack' | 0.9071 | -0.2376 | 0.8047 | -0.133 | 0.4319 |
+| Data task | Env task | Instruction | Main corr | Main corr (flipped) | Wrist corr | Wrist corr (flipped) | State ratio |
+|---|---|---|---|---|---|---|---|
+| 0 | 8 | put the bowl on the plate | 0.9203 | -0.2414 | 0.8312 | -0.1814 | 0.3266 |
+| 1 | 9 | put the wine bottle on the rack | 0.9135 | -0.2449 | 0.8318 | -0.08492 | 0.5709 |
+| 2 | 3 | open the top drawer and put the bowl inside | 0.903 | -0.2375 | 0.897 | 0.003853 | 0.5203 |
+| 3 | 6 | put the cream cheese in the bowl | 0.9144 | -0.242 | 0.8048 | -0.04458 | 0.7413 |
+| 4 | 2 | put the wine bottle on top of the cabinet | 0.9223 | -0.229 | 0.9133 | -0.01565 | 0.6925 |
+| 5 | 5 | push the plate to the front of the stove | 0.9389 | -0.2394 | 0.8585 | -0.08207 | 0.5491 |
+| 6 | 7 | turn on the stove | 0.9273 | -0.2339 | 0.7876 | -0.1589 | 0.7813 |
+| 7 | 1 | put the bowl on the stove | 0.9309 | -0.2348 | 0.8509 | -0.04492 | 0.8008 |
+| 8 | 4 | put the bowl on top of the cabinet | 0.9042 | -0.2271 | 0.7694 | -0.01521 | 0.7651 |
+| 9 | 0 | open the middle drawer of the cabinet | 0.9219 | -0.2356 | 0.8424 | -0.191 | 0.655 |
 
 ## Token layout
 
@@ -55,11 +56,11 @@ Correlations are between grayscale images; orientation passes if the as-is corre
 
 | Measurement | Seconds |
 |---|---|
-| Tokenize/preprocess batch 32 (CPU, one process; 10 calls) | 9.728 |
-| Backbone forward batch 32 (16 layers, no grad; 20 calls) | 1.178 |
-| Online training step, batch 16 (backbone + stand-in expert fwd/bwd) | 0.6458 |
-| Cached training step, batch 16 (stand-in expert only, memory on GPU) | 0.0325 |
-| Cached training step, batch 64 | 0.08661 |
+| Tokenize/preprocess batch 32 (CPU, one process; 10 calls) | 9.873 |
+| Backbone forward batch 32 (16 layers, no grad; 20 calls) | 1.106 |
+| Online training step, batch 16 (backbone + stand-in expert fwd/bwd) | 0.5977 |
+| Cached training step, batch 16 (stand-in expert only, memory on GPU) | 0.03091 |
+| Cached training step, batch 64 | 0.08222 |
 
 Peak GPU memory allocated: 2.24 GB. The stand-in expert has the planned size (6 layers, width 512) but is not the M3 expert. Cached timings exclude reading features from disk.
 
@@ -69,8 +70,8 @@ Planning arithmetic from the timings above, for 6 models x 1,280,000 training sa
 
 | Option | GPU hours |
 |---|---|
-| Online: 6 models | 86.11 |
-| Cache all frames: build + 6 models | 7.814 |
-| Cache every 2nd frame: build + 6 models | 5.35 |
+| Online: 6 models | 79.7 |
+| Cache all frames: build + 6 models | 7.7 |
+| Cache every 2nd frame: build + 6 models | 5.22 |
 
 **Rule result: CACHE all 52042 frames (14.3 GB).** Needs your approval before R2.
