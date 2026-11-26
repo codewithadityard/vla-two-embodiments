@@ -59,7 +59,7 @@ README.md
 - **Run records.** Each run writes `outputs/<run_id>/` (gitignored): the resolved config, the git commit, `metrics.csv`, and the final checkpoint (expert weights + normalization stats + config). Small summaries go into `results/` and are committed.
 - **Logging.** Plain CSV, no MLflow: simpler, and every line is readable.
 - **GPU ledger.** `docs/gpu_ledger.md` gets one row per Kaggle run: date, notebook version, purpose, accelerator, minutes (Kaggle's figure), link to the results file. Created in M1 with the two feasibility runs.
-- **Code on Kaggle.** Each notebook does `git clone` of this repo plus `git checkout <commit>`, then runs scripts. LeRobot is pinned to `b07adcc5`, the same as feasibility. The commit has to be pushed first, and pushing is your call each time. If the GitHub repo is private, a read-only token goes in Kaggle Secrets.
+- **Code on Kaggle.** Each notebook clones `main` of this public repo and logs the exact commit hash it ran, then runs scripts. LeRobot is pinned to `b07adcc5`, the same as feasibility. Work is merged into `main` and pushed before each Kaggle run.
 - **Laptop environment.** The full LeRobot/MuJoCo setup stays **on hold** until WSL RAM is raised. For M1–M4 I propose a light Miniforge env (Python 3.12) outside the repo: `pandas pyarrow huggingface_hub numpy pyyaml pillow pytest`, plus `torch` (CPU wheel is enough) from M3. Needs your OK; no sudo.
 
 ---
@@ -501,9 +501,11 @@ The biggest unknown is **eval cost per episode**. At the high end, M6 eval alone
 
 ---
 
-## 13. Decisions I need from you before or during M1
+## 13. Decisions (approved 2026-11-26)
 
-1. **Laptop env:** OK to create a light Miniforge Python 3.12 env (pandas, pyarrow, huggingface_hub, numpy, pyyaml, pillow, pytest; torch CPU later)? The full LeRobot setup stays on hold.
-2. **Code on Kaggle:** is the GitHub repo public? If not, should we put a read-only token in Kaggle Secrets? Each Kaggle run needs the commit pushed first, and pushing is your call.
-3. **Overlap:** may P2 run on days 4–5 while M6 runs in the background?
-4. **Reference row:** include the optional `smolvla_libero` row if the reserve allows?
+1. **Laptop env:** yes, a small Python 3.12 env for M1–M4. The full LeRobot setup is not part of it.
+2. **Code on Kaggle:** the GitHub repo is public; Kaggle clones it directly, with no token.
+3. **Overlap:** P2 runs on days 4–5 while M6 runs in the background.
+4. **Reference row:** `smolvla_libero` row only if the reserve allows; it stays first on the cut list.
+5. **Branching:** work is merged into `main` and pushed, so Kaggle always clones `main`. Notebooks still log the exact commit hash.
+6. **WSL memory:** raised to 4.8 GB RAM + 16 GB swap (`free -h`).
