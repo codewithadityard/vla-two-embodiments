@@ -2,7 +2,7 @@
 
 Each run tag gets its own private Kaggle notebook "<owner>/vla-<tag>", so two runs can go at once.
 
-  python -m scripts.kaggle_run push TAG --module scripts.x [--args "a b c"] [--commit HASH] [--gpu] [--dataset owner/slug] --purpose "..."
+  python -m scripts.kaggle_run push TAG --module scripts.x [--args "a b c"] [--commit HASH] [--gpu] [--dataset owner/slug] [--kernel-source owner/notebook] --purpose "..."
   python -m scripts.kaggle_run status TAG
   python -m scripts.kaggle_run summary TAG      # downloads ONLY outputs/summary.md (small), prints it
 """
@@ -39,7 +39,7 @@ def push(a):
     (folder / "runner.ipynb").write_text(json.dumps(make_notebook(config_cell(run)), indent=1))
     meta = {"id": ref(a.tag), "title": f"vla-{a.tag}", "code_file": "runner.ipynb", "language": "python",
             "kernel_type": "notebook", "is_private": True, "enable_gpu": a.gpu, "enable_internet": True,
-            "dataset_sources": a.dataset, "competition_sources": [], "kernel_sources": []}
+            "dataset_sources": a.dataset, "competition_sources": [], "kernel_sources": a.kernel_source}
     (folder / "kernel-metadata.json").write_text(json.dumps(meta, indent=2))
     cmd = [KAGGLE, "kernels", "push", "-p", str(folder)]
     if a.gpu:
@@ -75,6 +75,7 @@ if __name__ == "__main__":
     pp.add_argument("--gpu", action="store_true")
     pp.add_argument("--accelerator", default="NvidiaTeslaT4")
     pp.add_argument("--dataset", action="append", default=[])
+    pp.add_argument("--kernel-source", action="append", default=[])  # attach another notebook's output
     for name in ["status", "summary"]:
         sub.add_parser(name).add_argument("tag")
     a = p.parse_args()
