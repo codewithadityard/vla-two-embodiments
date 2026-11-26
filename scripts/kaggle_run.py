@@ -2,12 +2,13 @@
 
 Each run tag gets its own private Kaggle notebook "<owner>/vla-<tag>", so two runs can go at once.
 
-  python -m scripts.kaggle_run push TAG --module scripts.x [--args ...] [--commit HASH] [--gpu] [--dataset owner/slug] --purpose "..."
+  python -m scripts.kaggle_run push TAG --module scripts.x [--args "a b c"] [--commit HASH] [--gpu] [--dataset owner/slug] --purpose "..."
   python -m scripts.kaggle_run status TAG
   python -m scripts.kaggle_run summary TAG      # downloads ONLY outputs/summary.md (small), prints it
 """
 import argparse
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -34,7 +35,7 @@ def push(a):
         sys.exit(f"commit {commit[:12]} is not on origin/main yet: push first")
     folder = WORK / a.tag
     folder.mkdir(parents=True, exist_ok=True)
-    run = {"commit": commit, "module": a.module, "args": a.args, "install": True, "purpose": a.purpose}
+    run = {"commit": commit, "module": a.module, "args": shlex.split(a.args), "install": True, "purpose": a.purpose}
     (folder / "runner.ipynb").write_text(json.dumps(make_notebook(config_cell(run)), indent=1))
     meta = {"id": ref(a.tag), "title": f"vla-{a.tag}", "code_file": "runner.ipynb", "language": "python",
             "kernel_type": "notebook", "is_private": True, "enable_gpu": a.gpu, "enable_internet": True,
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     pp = sub.add_parser("push")
     pp.add_argument("tag")
     pp.add_argument("--module", required=True)
-    pp.add_argument("--args", nargs="*", default=[])
+    pp.add_argument("--args", default="")  # one string, split like a shell
     pp.add_argument("--commit")
     pp.add_argument("--purpose", required=True)
     pp.add_argument("--gpu", action="store_true")
