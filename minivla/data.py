@@ -140,3 +140,34 @@ def train_stats(frames, train_eps) -> dict[str, dict]:
     """Normalization stats for state and action, from train-split frames only."""
     mask = np.isin(frames["episode_index"], list(train_eps))
     return {name: norm_stats(frames[name][mask]) for name in VECTOR_COLS.values()}
+
+
+# ---------- action chunks and normalization ----------
+
+def chunk_indices(frames, chunk: int):
+    """For every frame i: the global indices of actions i..i+chunk-1 and a pad mask.
+
+    Indices never cross the end of i's episode: past the end, the last action is repeated
+    and pad is True there (those steps are left out of the loss, like LeRobot's action_is_pad).
+    Requires frames sorted by index with each episode stored contiguously.
+    """
+    ep = frames["episode_index"]
+    if not np.array_equal(frames["index"], np.arange(len(ep))) or np.any(np.diff(ep) < 0):
+        raise ValueError("frames must be sorted by index with contiguous episodes")
+    last = np.empty(len(ep), dtype=np.int64)  # last global index of each frame's episode
+    ends = np.flatnonzero(np.r_[ep[1:] != ep[:-1], True])
+    starts = np.r_[0, ends[:-1] + 1]
+    for s, e in zip(starts, ends):
+        last[s:e + 1] = e
+    idx = np.arange(len(ep))[:, None] + np.arange(chunk)[None, :]
+    pad = idx > last[:, None]
+    return np.minimum(idx, last[:, None]), pad
+
+
+def normalize(x, stats):
+    """(x - mean) / std with the train-split stats (std floored at 1e-6)."""
+    return (x - np.asarray(stats["mean"], np.float32)) / np.maximum(np.asarray(stats["std"], np.float32), 1e-6)
+
+
+def unnormalize(x, stats):
+    return x * np.maximum(np.asarray(stats["std"], np.float32), 1e-6) + np.asarray(stats["mean"], np.float32)

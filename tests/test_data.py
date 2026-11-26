@@ -100,3 +100,18 @@ def test_sample_images_decode():
     for key in ["observation.images.image", "observation.images.wrist_image"]:
         cell = table[key][0].as_py()
         assert np.array(Image.open(io.BytesIO(cell["bytes"]))).shape == (256, 256, 3)
+
+
+def test_chunk_indices_stay_in_episode():
+    frames = {"index": np.arange(7), "episode_index": np.array([0, 0, 0, 1, 1, 2, 2])}
+    idx, pad = data.chunk_indices(frames, chunk=3)
+    assert idx[0].tolist() == [0, 1, 2] and pad[0].tolist() == [False, False, False]
+    assert idx[1].tolist() == [1, 2, 2] and pad[1].tolist() == [False, False, True]  # episode 0 ends at 2
+    assert idx[3].tolist() == [3, 4, 4] and pad[3].tolist() == [False, False, True]
+    assert idx[6].tolist() == [6, 6, 6] and pad[6].tolist() == [False, True, True]
+
+
+def test_normalize_round_trip():
+    stats = {"mean": [1.0, -2.0], "std": [2.0, 0.0]}
+    x = np.array([[3.0, -2.0], [1.0, 5.0]], dtype=np.float32)
+    np.testing.assert_allclose(data.unnormalize(data.normalize(x, stats), stats), x, atol=1e-6)

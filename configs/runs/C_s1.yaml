@@ -1,0 +1,3 @@
+inherit: ../C_l1_lang.yaml
+name: C_s1
+seed: 1

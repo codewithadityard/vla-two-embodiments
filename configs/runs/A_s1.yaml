@@ -1,0 +1,3 @@
+inherit: ../A_flow_lang.yaml
+name: A_s1
+seed: 1
