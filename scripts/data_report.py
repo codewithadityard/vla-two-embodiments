@@ -32,7 +32,9 @@ def table(header, rows):
 
 def git_commit():
     head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-    dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True).stdout.strip()
+    # Only code and config count as "dirty"; the report itself changes every time it is written.
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", "minivla", "scripts", "configs"],
+                           capture_output=True, text=True).stdout.strip()
     return head + (" (uncommitted changes)" if dirty else "")
 
 
