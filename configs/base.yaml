@@ -16,3 +16,17 @@ data:
 split:
   split_seed: 0
   val_fraction: 0.1  # per task, by episode; at least 1 val episode per task
+
+seed: 0  # run-level randomness (probe frame choice, init, data order, noise)
+
+backbone:
+  name: HuggingFaceTB/SmolVLM2-500M-Video-Instruct
+  revision: 4cde9d208e19519c36917aa170fffc7e381aa0ad  # Hub commit, 2026-11-13
+  num_layers: 16  # first half of 32 LM layers, as lerobot/smolvla_base (num_vlm_layers: 16)
+
+cache:
+  max_gb: 15        # SPEC limit
+  dir: outputs/cache
+
+env:
+  suite: libero_goal
