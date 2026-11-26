@@ -6,6 +6,7 @@ Needs the attached inputs: the cache (R2 output) and libero-goal-lowdim. Writes 
 Exits 1 if any check fails. Thresholds are the approved ones and are not tuned to the results.
 """
 import copy
+import importlib.util
 import json
 import math
 import subprocess
@@ -82,12 +83,16 @@ def main():
         checks.append((name, bool(ok), detail))
         print("PASS" if ok else "FAIL", name, detail, flush=True)
 
-    # 1. torch unit tests (+ diagnostic: the two synthetic overfit tests with 3x the steps)
+    # 1. torch unit tests (+ diagnostic: the numbers behind the two random-data overfit tests)
     p = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_expert.py"], capture_output=True, text=True)
     check("torch unit tests (tests/test_expert.py)", p.returncode == 0, p.stdout.strip().splitlines()[-1])
     if p.returncode != 0:
         print(p.stdout[-3000:])
-    from tests.test_expert import overfit as synthetic_overfit
+    # load by file path: an installed package named `tests` on Kaggle hides the repo's tests/ folder
+    spec = importlib.util.spec_from_file_location("test_expert", "tests/test_expert.py")
+    test_expert = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(test_expert)
+    synthetic_overfit = test_expert.overfit
     for flow, steps in [(False, 1000), (True, 3000)]:
         first, last, l1 = synthetic_overfit(flow=flow, steps=steps)
         diag.append((f"synthetic overfit, {'flow' if flow else 'regression'}, {steps} steps",
