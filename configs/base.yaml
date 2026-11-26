@@ -41,7 +41,7 @@ model:
   chunk: 50         # smolvla_libero chunk_size / n_action_steps
 
 train:
-  steps: 20000      # fixed for all 6 models; plan rule: min(20000, steps in 60 min) -> confirmed by the M3+M4 run
+  steps: 19047      # fixed for all 6 models; plan rule min(20000, floor(3600 / 0.189 s/step)), measured in M3+M4 rerun 2 (two runs at once)
   batch: 64
   lr: 1.0e-4        # SmolVLA optimizer preset
   betas: [0.9, 0.95]
