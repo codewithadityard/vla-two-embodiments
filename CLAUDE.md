@@ -9,3 +9,9 @@
 - Keep code small and readable. I must be able to explain every line.
 - If something fails, stop and report it. Don't silently work around it.
 - Never commit data/, checkpoints/, outputs/ or mlruns/.
+
+# Laptop vs Kaggle (from 2026-11-26)
+- The laptop is on mobile data with 8 GB RAM. It must not download anything large: no dataset images, no model weights, no CUDA torch, no LeRobot. Laptop work is code editing and git only (plus the tiny conda env "vla" with numpy/pandas/pyarrow/pytest for non-torch tests).
+- All data, models, feature caches, training and evaluation run on Kaggle. Only small result files (md, json, small png) come back to the repo.
+- Any test that needs torch runs on Kaggle: a CPU session if no GPU is needed (saves GPU quota), otherwise GPU.
+- Kaggle runs use notebooks/runner.ipynb: it clones main at a given commit, installs pinned packages, runs one script, and prints a summary to paste back. Push to main before each run.

@@ -509,3 +509,4 @@ The biggest unknown is **eval cost per episode**. At the high end, M6 eval alone
 4. **Reference row:** `smolvla_libero` row only if the reserve allows; it stays first on the cut list.
 5. **Branching:** work is merged into `main` and pushed, so Kaggle always clones `main`. Notebooks still log the exact commit hash.
 6. **WSL memory:** raised to 4.8 GB RAM + 16 GB swap (`free -h`).
+7. **Laptop = code + git only** (mobile data, 8 GB RAM; see CLAUDE.md). This overrides the "laptop" parts of M2–M7 above: torch tests, overfit checks and short runs all go through `notebooks/runner.ipynb` on Kaggle (CPU session when no GPU is needed). The laptop keeps only non-torch tests.

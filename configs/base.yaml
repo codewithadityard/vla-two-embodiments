@@ -1,0 +1,18 @@
+# Shared settings for every run. Run files in configs/runs/ inherit from this.
+
+data:
+  repo_id: lerobot/libero_goal_image
+  revision: 91a97115558b5b611200a432d9c82e4f30991b60  # Hub commit, 2026-03-09
+  # Laptop copies (gitignored). Images are never fully downloaded on the laptop.
+  meta_dir: data/libero_goal_meta                     # meta/ files only
+  lowdim_path: data/libero_goal_lowdim.parquet        # non-image columns, read from the Hub
+  sample_path: data/libero_goal_sample.parquet        # all columns, sample episodes only
+  sample_episodes: [0, 1]
+  # Only meta/ is downloaded; used to compare with the dataset smolvla_libero trained on.
+  reference_repo_id: HuggingFaceVLA/libero
+  reference_revision: 86958911c0f959db2bbbdb107eb3e17c5f9c798e  # Hub commit, 2025-09-30
+  reference_meta_dir: data/hf_vla_libero_meta
+
+split:
+  split_seed: 0
+  val_fraction: 0.1  # per task, by episode; at least 1 val episode per task
