@@ -31,9 +31,10 @@ class FlowMatchingHead:
     def sample_time(self, n, device):
         return self.beta.sample((n,)).to(device) * 0.999 + 0.001
 
-    def loss(self, expert, feats, mask, state, actions, pad):
-        noise = torch.randn_like(actions)
-        t = self.sample_time(actions.shape[0], actions.device)
+    def loss(self, expert, feats, mask, state, actions, pad, noise=None, t=None):
+        """noise / t can be given (fixed) for diagnostics; by default they are drawn fresh."""
+        noise = torch.randn_like(actions) if noise is None else noise
+        t = self.sample_time(actions.shape[0], actions.device) if t is None else t
         tt = t[:, None, None]
         x_t = tt * noise + (1 - tt) * actions
         u = noise - actions
@@ -41,11 +42,11 @@ class FlowMatchingHead:
         return masked_mean((v - u) ** 2, pad)
 
     @torch.no_grad()
-    def predict(self, expert, feats, mask, state, generator=None):
-        """Euler from pure noise at t = 1 to t = 0 in `steps` steps. generator fixes the noise."""
+    def predict(self, expert, feats, mask, state, generator=None, steps=None):
+        """Euler from pure noise at t = 1 to t = 0 in `steps` steps (default: self.steps). generator fixes the noise."""
         b = feats.shape[0]
         x = torch.randn(b, expert.chunk, expert.out.out_features, device=feats.device, generator=generator)
-        return euler(lambda x, t: expert(feats, mask, state, x, t).float(), x, self.steps)
+        return euler(lambda x, t: expert(feats, mask, state, x, t).float(), x, steps or self.steps)
 
 
 def euler(velocity, x, steps):

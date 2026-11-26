@@ -41,26 +41,49 @@ def check_cache_meta(meta, cfg):
         raise ValueError(f"cache does not match config: {bad}")
 
 
+def meminfo_gb(key):
+    """A /proc/meminfo field in GB (e.g. "Cached" = OS page cache, "MemTotal")."""
+    for line in open("/proc/meminfo"):
+        if line.startswith(key + ":"):
+            return int(line.split()[1]) / 1e6
+    return float("nan")
+
+
+def warm_page_cache(paths, block=64 << 20):
+    """Read files once, sequentially, so the OS keeps them in RAM (page cache).
+    Every process that memory-maps them afterwards (two runs at once included) shares that one copy;
+    without this, the first random reads of a memmap go to disk (13.5 s/step in the first M3+M4 run)."""
+    for p in paths:
+        with open(p, "rb", buffering=0) as f:
+            while f.read(block):
+                pass
+
+
 class CachedData:
-    """Cached features + normalized state/action chunks, batched on the GPU."""
+    """Cached features (memory-mapped, warmed into the shared page cache) + normalized state/action chunks."""
 
     def __init__(self, cache_dir, frames, stats, use_language, chunk, device):
         self.meta, c = cache.open_cache(cache_dir)
         self.use_language, self.device = use_language, device
-        need = c["prefix"].nbytes + (c["text"].nbytes if use_language else 0)
-        ram = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
-        self.in_ram = ram > 1.5 * need
-        load = np.ascontiguousarray if self.in_ram else (lambda a: a)  # read into RAM if it fits
+        files = [Path(cache_dir) / "prefix.npy"] + ([Path(cache_dir) / "text.npy"] if use_language else [])
+        self.need_gb = sum(f.stat().st_size for f in files) / 1e9
         t = time.time()
-        self.prefix = load(c["prefix"])
-        self.text = load(c["text"]) if use_language else None
-        self.text_mask = np.asarray(c["text_mask"])
+        warm_page_cache(files)
         self.load_min = (time.time() - t) / 60
-        self.ram_gb, self.need_gb = ram / 1e9, need / 1e9
+        self.ram_gb, self.page_cache_gb = meminfo_gb("MemTotal"), meminfo_gb("Cached")
+        self.prefix = c["prefix"]
+        self.text = c["text"] if use_language else None
+        self.text_mask = np.asarray(c["text_mask"])
         self.n_prefix, self.n_text, self.dim = self.meta["n_prefix"], self.meta["n_text"], self.meta["dim"]
         self.state = data.normalize(frames["state"], stats["state"]).astype(np.float32)
         self.actions = data.normalize(frames["action"], stats["action"]).astype(np.float32)
         self.chunk_idx, self.pad = data.chunk_indices(frames, chunk)
+        print(f"cache: warmed {self.need_gb:.1f} GB in {self.load_min:.1f} min; page cache {self.page_cache_gb:.1f} GB "
+              f"of {self.ram_gb:.1f} GB RAM", flush=True)
+
+    def describe(self):
+        return (f"cache memory-mapped, warmed into the page cache ({self.need_gb:.1f} GB read in {self.load_min:.1f} min; "
+                f"page cache {self.page_cache_gb:.1f} GB of {self.ram_gb:.1f} GB RAM after warming)")
 
     def batch(self, rows):
         rows = np.sort(np.asarray(rows))
