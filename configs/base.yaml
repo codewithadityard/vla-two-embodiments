@@ -58,6 +58,6 @@ flow:
   beta_b: 1.0
 
 eval:
-  episodes_per_task: 5   # SPEC start value; M5 rule may raise it (never lower)
+  episodes_per_task: 10  # M5 rule, pair-adjusted (approved 2026-11-27): s_ep 67.1 s with two runs at once -> cap 10
   eval_seed: 1000
   n_action_steps: 50     # execute the whole chunk, then replan (smolvla_libero)

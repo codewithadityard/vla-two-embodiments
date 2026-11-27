@@ -20,7 +20,7 @@ from minivla.eval_libero import Policy, evaluate
 from minivla.train import prepare, setup_determinism, train, zero_baseline_l1
 
 SHORT_STEPS = 2000
-SMOKE_TASKS, SMOKE_EPISODES = [0, 1], 1
+SMOKE_TASKS, SMOKE_EPISODES = [0, 1], [0]
 
 
 def main(cfg_path, tag):

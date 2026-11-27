@@ -54,7 +54,8 @@ def save_gif(frames, path, every=2, size=128):
 
 
 def evaluate(cfg, policy, run_name, csv_path, video_dir, tasks=None, episodes=None):
-    """Run every task x episodes_per_task (or only the given tasks / number of episodes: smoke tests).
+    """Run every task x episodes 0..episodes_per_task-1, or only the given task / episode lists (smoke tests,
+    top-ups). Episode e always uses init state e and seed eval_seed + e, so any subset gives the same episodes.
     Writes one CSV row per episode (flushed as it goes). Returns rows."""
     from libero.libero import benchmark
     from lerobot.sim.integrations.libero import LiberoEnv, canonical_observation
@@ -69,7 +70,7 @@ def evaluate(cfg, policy, run_name, csv_path, video_dir, tasks=None, episodes=No
         w = csv.writer(f)
         w.writerow(["run", "env_task", "instruction", "episode", "seed", "success", "steps", "seconds"])
         for task in (range(suite.n_tasks) if tasks is None else tasks):
-            for ep in range(ecfg["episodes_per_task"] if episodes is None else episodes):
+            for ep in (range(ecfg["episodes_per_task"]) if episodes is None else episodes):
                 seed = ecfg["eval_seed"] + ep
                 t0 = time.time()
                 env = LiberoEnv(task_suite=suite, task_id=task, task_suite_name=suite_name,
