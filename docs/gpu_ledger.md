@@ -34,5 +34,6 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 
 | 2026-11-27 15:23 | `vla-p2-r1` v1 (`13ad13e`) | P2-R1: probes and planning failed at config composition (hydra-submitit-launcher plugin missing from the package list; fixed). Data check: pixels are float32 0-255 but not integer-valued | T4 x2 | 11.2 | summary via CLI |
 | 2026-11-27 15:36 | `vla-p2-r1` v2 (`eaedcb6`) | P2-R1: probes and planning failed building the DINOv2 encoder (torch.hub fetched today's dinov2 main, which needs Python >= 3.10); fixed by pinning the hub cache to dinov2 `e1277af` | T4 x2 | 10.3 | summary via CLI |
+| 2026-11-27 16:04 | `vla-p2-r1` v3 (`fdc55a8`) | P2-R1: 1/4 checks PASS. Decoder-on training probe and official planning ran out of T4 memory (16 GB) in the VQ-VAE decoder; decoder-off probe: 8.39 s/step, 554 steps/epoch = 77.5 min/epoch. Stopped for decisions | T4 x2 | 26.3 | `results/p2_r1.md` |
 
-**GPU total used: 511.9 min (8.5 h) + R1b pending** (CPU runs not counted).
+**GPU total used: 538.2 min (9.0 h) + R1b pending** (CPU runs not counted).
