@@ -24,6 +24,8 @@ P2_OUT = Path("/kaggle/working/outputs/p2")  # saved as the run's output, attach
 DATA_DIR = Path("/tmp/p2_data")  # DATASET_DIR: wall_single.zip expands to > 20 GB (the output disk), so it is
                                  # extracted to /tmp in every run; only the zip is kept as output
 CONSTRAINTS = Path("/tmp/p2_constraints.txt")  # environment.yaml pip pins, applied to every install
+MUJOCO_URL = "https://github.com/google-deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz"
+MUJOCO_DIR = Path("/root/.mujoco/mujoco210")  # where mujoco-py looks (README: ~/.mujoco)
 
 
 def sh(cmd, **kw):
@@ -123,3 +125,21 @@ def disk(label):
     """Print free space where the venv (/tmp) and outputs (/kaggle/working) live."""
     print(f"[disk] {label}:", flush=True)
     subprocess.run(["df", "-h", "/tmp", "/kaggle/working"])
+
+
+def venv_env():
+    """Environment for every command run in the venv. MUJOCO_PY_FORCE_CPU: mujoco-py builds its CPU extension
+    (Wall never renders with MuJoCo; mujoco-py is only imported because env/__init__ imports PointMaze)."""
+    return {"PATH": "/usr/bin:/bin", "HOME": "/root", "WANDB_MODE": "disabled", "DATASET_DIR": str(DATA_DIR),
+            "LD_LIBRARY_PATH": f"{MUJOCO_DIR}/bin", "MUJOCO_PY_FORCE_CPU": "1"}
+
+
+def install_mujoco_py(pins):
+    """README: MuJoCo 2.1 binaries in ~/.mujoco + mujoco-py (pinned). mujoco-py compiles itself on first import,
+    so it needs gcc, the GL/OSMesa headers, patchelf and Cython < 3."""
+    sh("apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "
+       "libosmesa6-dev libgl1-mesa-dev libglew-dev libglfw3 patchelf > /dev/null")
+    if not MUJOCO_DIR.exists():
+        MUJOCO_DIR.parent.mkdir(parents=True, exist_ok=True)
+        sh(f"curl -sSL --fail {MUJOCO_URL} | tar -xz -C {MUJOCO_DIR.parent}")
+    uv_pip(pins.get("mujoco-py", "mujoco-py==2.1.2.14"), pins.get("cython", "cython<3"))

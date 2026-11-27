@@ -25,5 +25,7 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 
 | 2026-11-27 14:11 | `vla-p2-r0` v2 (`d3f8614`) | P2-R0: wall_single.zip expands to > 20 GB (filled /kaggle/working); wandb 0.13.1 failed with the newest sentry-sdk; fixed (extract to /tmp, environment.yaml pins as constraints) | CPU (no GPU quota) | ~10 (crashed, no summary) | log only |
 
+| 2026-11-27 14:23 | `vla-p2-r0` v3 (`b877a1a`) | P2-R0: plan.py needs mujoco_py (env/__init__ imports PointMaze); checkpoint zip holds macOS `._` files; report not written; fixed (MuJoCo 2.1 + mujoco-py per README, junk filter, report always written) | CPU (no GPU quota) | 10.0 | summary via CLI |
+
 
 **GPU total used: 423.4 min (7.1 h) + R1b pending** (CPU runs not counted).
