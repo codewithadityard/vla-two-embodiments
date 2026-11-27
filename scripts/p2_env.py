@@ -21,6 +21,9 @@ TORCH = ["torch==2.3.0", "torchvision==0.18.0"]  # environment.yaml; cu121 wheel
 TORCH_INDEX = "https://download.pytorch.org/whl/cu121"
 OSF_NODE, OSF_VIEW_ONLY = "bmw48", "a56a296ce3b24cceaf408383a175ce28"  # DINO-WM README
 P2_OUT = Path("/kaggle/working/outputs/p2")  # saved as the run's output, attached by later runs
+DATA_DIR = Path("/tmp/p2_data")  # DATASET_DIR: wall_single.zip expands to > 20 GB (the output disk), so it is
+                                 # extracted to /tmp in every run; only the zip is kept as output
+CONSTRAINTS = Path("/tmp/p2_constraints.txt")  # environment.yaml pip pins, applied to every install
 
 
 def sh(cmd, **kw):
@@ -30,7 +33,8 @@ def sh(cmd, **kw):
 
 def uv_pip(*args):
     # --no-cache: no second copy of the ~4.5 GB torch/CUDA wheels (P2-R0 v1 ran out of disk)
-    sh([sys.executable, "-m", "uv", "pip", "install", "--no-cache", "--python", str(PY), *args])
+    extra = ["-c", str(CONSTRAINTS)] if CONSTRAINTS.exists() else []  # dependencies get the official versions too
+    sh([sys.executable, "-m", "uv", "pip", "install", "--no-cache", "--python", str(PY), *extra, *args])
 
 
 def clone():
@@ -43,6 +47,27 @@ def make_venv():
     sh([sys.executable, "-m", "pip", "install", "-q", f"uv=={UV_VERSION}"])
     sh([sys.executable, "-m", "uv", "venv", "--python", PYTHON, str(VENV)])
     uv_pip("--index-url", TORCH_INDEX, *TORCH)
+
+
+def write_constraints():
+    """Constraints file from environment.yaml's pip section (+ numpy, setuptools from conda). A constraint only
+    applies if the package gets installed, so this pins e.g. sentry-sdk for wandb 0.13.1 without installing it."""
+    import yaml
+    deps = yaml.safe_load((REPO / "environment.yaml").read_text())["dependencies"]
+    lines = [p for d in deps if isinstance(d, dict) for p in d.get("pip", []) if "==" in p]
+    lines += [f"{d.split('=')[0]}=={d.split('=')[1]}" for d in deps
+              if isinstance(d, str) and d.split("=")[0] in ("numpy", "setuptools")]
+    CONSTRAINTS.write_text("\n".join(lines) + "\n")
+    return lines
+
+
+def extract_data(zip_path):
+    import zipfile
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(zip_path) as zf:
+        total = sum(i.file_size for i in zf.infolist())
+        zf.extractall(DATA_DIR)
+    return total
 
 
 def env_pins():
