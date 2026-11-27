@@ -30,5 +30,7 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-27 14:40 | `vla-topup-s0` v1 (`9ddb884`) | Top-up eval, start states 5-9, final checkpoints: all checks PASS; A_s0 42/50, C_s0 34/50 (totals now 82/100, 75/100) | T4 x2 | 67.0 | `results/runs/*_ep5-9.md`, `results/eval/` |
 | 2026-11-27 14:40 | `vla-p2-r0` v4 (`f498d85`) | P2-R0: 8/10 PASS (venv, mujoco_py, all imports, downloads, checkpoint + its hydra.yaml); dataset listing showed only HF lock files and the compose override clashed with train.yaml's launcher keys (inspection bugs, fixed) | CPU (no GPU quota) | 13.7 | `results/p2_r0.md` |
 
+| 2026-11-27 14:57 | `vla-p2-r0` v5 (`a563fe8`) | P2-R0: 10/10 PASS (venv + mujoco-py, imports, data 1920 x 50, checkpoint epoch 65 + hydra.yaml, config diff, success criterion) | CPU (no GPU quota) | 14.0 | `results/p2_r0.md` |
+
 
 **GPU total used: 490.4 min (8.2 h) + R1b pending** (CPU runs not counted).
