@@ -82,9 +82,11 @@ LISTING = """
 import torch, numpy as np
 from pathlib import Path
 root = Path({root!r})
-files = [p for p in sorted(root.rglob('*')) if p.is_file()]
+files = [p for p in sorted(root.rglob('*')) if p.is_file() and '.huggingface' not in p.parts]  # skip HF lock files
 print('total files', len(files), '| total GB', round(sum(p.stat().st_size for p in files) / 1e9, 2))
-for p in files[:40]:
+obses = [p for p in files if p.parent.name == 'obses']
+print('obses/ episode files:', len(obses))
+for p in [p for p in files if p.parent.name != 'obses'][:30] + obses[:3]:
     desc = ''
     try:
         if p.suffix in ('.pth', '.pt'):
@@ -173,8 +175,8 @@ def main():
 
         # 4a. dataset
         rc, out = venv_run(LISTING.format(root=str(DATA_DIR)))
-        section("Dataset listing (DATASET_DIR, first 40 files)", "```\n" + out.strip() + "\n```")
-        sizes_ok = bool(re.search(r"\(1920, 5[01]\b|len 1920\b", out))
+        section("Dataset listing (DATASET_DIR; HF lock files skipped; first 3 episode files)", "```\n" + out.strip() + "\n```")
+        sizes_ok = bool(re.search(r"\(1920, 5[01]\b|len 1920\b|obses/ episode files: 1920\b", out))
         check("dataset: something with 1920 trajectories x ~50 steps is present (paper: 1920 x 50)",
               rc == 0 and sizes_ok, "see listing")
 
@@ -185,7 +187,8 @@ def main():
         model_files = [p for p in ckpt_files if p.suffix in (".pth", ".pt", ".ckpt")]
         rc, out = venv_run("import torch\n" + "".join(
             f"x = torch.load({str(p)!r}, map_location='cpu'); print({p.name!r}, type(x).__name__, "
-            f"sorted(map(str, x))[:30] if isinstance(x, dict) else '')\n" for p in model_files))
+            f"sorted(map(str, x))[:30] if isinstance(x, dict) else '', 'epoch:', "
+            f"x.get('epoch') if isinstance(x, dict) else '')\n" for p in model_files))
         section("Checkpoint torch.load", "```\n" + out.strip()[-3000:] + "\n```")
         check("Wall checkpoint file(s) load with torch.load (repo on the path)", rc == 0 and model_files)
         cfgs = [p for p in ckpt_files if p.suffix == ".yaml" and "frameskip" in p.read_text(errors="replace")]
@@ -196,15 +199,12 @@ def main():
                     "```yaml\n" + cfgs[0].read_text().strip() + "\n```")
 
         # 4c. composed repo config for env=wall vs the checkpoint's saved config
-        def compose():
-            return subprocess.run([str(PY), "train.py", "--config-name", "train.yaml", "env=wall",
-                                   "hydra/launcher=basic", "--cfg", "job"], cwd=REPO, capture_output=True, text=True,
-                                  env=venv_env())
-        composed = compose()
-        if composed.returncode != 0 and "launcher" in composed.stderr:  # the default launcher plugin may be needed
-            uv_pip(pins.get("hydra-submitit-launcher", "hydra-submitit-launcher"))
-            composed = compose()
-        check("repo train config composes with env=wall (hydra --cfg job, nothing trained)", composed.returncode == 0,
+        # train.yaml's defaults name the submitit launcher (and set its keys), so its plugin must be installed for
+        # the config to compose; a plain (non --multirun) run never uses a launcher.
+        uv_pip(pins.get("hydra-submitit-launcher", "hydra-submitit-launcher"))
+        composed = subprocess.run([str(PY), "train.py", "--config-name", "train.yaml", "env=wall", "--cfg", "job"],
+                                  cwd=REPO, capture_output=True, text=True, env=venv_env())
+        check("repo train config composes with env=wall (hydra --cfg job, default launcher, nothing trained)", composed.returncode == 0,
               composed.stderr.strip()[-500:])
         if cfgs and composed.returncode == 0:
             saved, repo = flatten(yaml.safe_load(cfgs[0].read_text())), flatten(yaml.safe_load(composed.stdout))
