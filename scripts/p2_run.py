@@ -50,6 +50,9 @@ def setup():
             if l and not re.match(r"(torch|torchvision|triton|nvidia-)", l)]  # torch family comes from the cu121 index
     Path("/tmp/p2_req.txt").write_text("\n".join(keep) + "\n")
     uv_pip("-r", "/tmp/p2_req.txt")
+    # train.yaml / plan_wall.yaml name the submitit launcher in their defaults, so its plugin must be installed
+    # for the configs to compose (P2-R0 installed it after writing p2_requirements.txt; P2-R1 v1 failed on this)
+    uv_pip(env_pins()["hydra-submitit-launcher"])
     t1 = time.time()
     extract_data(find_input("p2/wall_single.zip"))
     ckpt_base = find_input("p2/checkpoints/outputs/wall_single/hydra.yaml").parents[2]
