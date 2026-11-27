@@ -1,0 +1,51 @@
+run,env_task,instruction,episode,seed,success,steps,seconds
+C_s0,0,open the middle drawer of the cabinet,0,1000,1,157,93.1
+C_s0,0,open the middle drawer of the cabinet,1,1001,1,119,50.3
+C_s0,0,open the middle drawer of the cabinet,2,1002,1,120,55.4
+C_s0,0,open the middle drawer of the cabinet,3,1003,0,300,117.3
+C_s0,0,open the middle drawer of the cabinet,4,1004,1,121,57.1
+C_s0,1,put the bowl on the stove,0,1000,1,83,45.8
+C_s0,1,put the bowl on the stove,1,1001,1,86,45.6
+C_s0,1,put the bowl on the stove,2,1002,1,82,45.1
+C_s0,1,put the bowl on the stove,3,1003,1,85,44.6
+C_s0,1,put the bowl on the stove,4,1004,1,94,50.1
+C_s0,2,put the wine bottle on top of the cabinet,0,1000,1,85,45.6
+C_s0,2,put the wine bottle on top of the cabinet,1,1001,1,90,47.7
+C_s0,2,put the wine bottle on top of the cabinet,2,1002,1,87,45.3
+C_s0,2,put the wine bottle on top of the cabinet,3,1003,1,82,43.8
+C_s0,2,put the wine bottle on top of the cabinet,4,1004,1,96,48.5
+C_s0,3,open the top drawer and put the bowl inside,0,1000,0,300,125.8
+C_s0,3,open the top drawer and put the bowl inside,1,1001,1,190,85.1
+C_s0,3,open the top drawer and put the bowl inside,2,1002,1,182,83.0
+C_s0,3,open the top drawer and put the bowl inside,3,1003,1,179,79.7
+C_s0,3,open the top drawer and put the bowl inside,4,1004,1,171,78.8
+C_s0,4,put the bowl on top of the cabinet,0,1000,1,85,46.0
+C_s0,4,put the bowl on top of the cabinet,1,1001,1,86,45.2
+C_s0,4,put the bowl on top of the cabinet,2,1002,1,84,45.7
+C_s0,4,put the bowl on top of the cabinet,3,1003,1,88,45.7
+C_s0,4,put the bowl on top of the cabinet,4,1004,1,87,45.2
+C_s0,5,push the plate to the front of the stove,0,1000,1,111,54.0
+C_s0,5,push the plate to the front of the stove,1,1001,1,115,57.0
+C_s0,5,push the plate to the front of the stove,2,1002,1,136,64.7
+C_s0,5,push the plate to the front of the stove,3,1003,1,104,52.6
+C_s0,5,push the plate to the front of the stove,4,1004,1,116,56.1
+C_s0,6,put the cream cheese in the bowl,0,1000,0,300,130.1
+C_s0,6,put the cream cheese in the bowl,1,1001,0,300,128.5
+C_s0,6,put the cream cheese in the bowl,2,1002,0,300,130.6
+C_s0,6,put the cream cheese in the bowl,3,1003,0,300,131.9
+C_s0,6,put the cream cheese in the bowl,4,1004,0,300,131.4
+C_s0,7,turn on the stove,0,1000,1,81,42.1
+C_s0,7,turn on the stove,1,1001,1,85,43.9
+C_s0,7,turn on the stove,2,1002,1,72,40.0
+C_s0,7,turn on the stove,3,1003,1,89,43.9
+C_s0,7,turn on the stove,4,1004,1,87,46.0
+C_s0,8,put the bowl on the plate,0,1000,1,69,38.4
+C_s0,8,put the bowl on the plate,1,1001,1,175,81.9
+C_s0,8,put the bowl on the plate,2,1002,0,300,129.1
+C_s0,8,put the bowl on the plate,3,1003,1,72,40.8
+C_s0,8,put the bowl on the plate,4,1004,1,77,41.7
+C_s0,9,put the wine bottle on the rack,0,1000,1,132,58.1
+C_s0,9,put the wine bottle on the rack,1,1001,1,133,59.5
+C_s0,9,put the wine bottle on the rack,2,1002,0,300,120.2
+C_s0,9,put the wine bottle on the rack,3,1003,1,139,59.3
+C_s0,9,put the wine bottle on the rack,4,1004,1,125,59.6
