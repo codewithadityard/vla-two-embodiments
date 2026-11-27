@@ -130,7 +130,10 @@ def disk(label):
 def venv_env():
     """Environment for every command run in the venv. MUJOCO_PY_FORCE_CPU: mujoco-py builds its CPU extension
     (Wall never renders with MuJoCo; mujoco-py is only imported because env/__init__ imports PointMaze)."""
-    return {"PATH": "/usr/bin:/bin", "HOME": "/root", "WANDB_MODE": "disabled", "DATASET_DIR": str(DATA_DIR),
+    # WANDB_DISABLE_SERVICE: plan.py hard-codes wandb_logging=True; with the service off, wandb.init (disabled mode)
+    # starts no background process (P2-R2 v2: that service failed to start and planning crashed)
+    return {"PATH": "/usr/bin:/bin", "HOME": "/root", "WANDB_MODE": "disabled", "WANDB_DISABLE_SERVICE": "true",
+            "DATASET_DIR": str(DATA_DIR),
             "LD_LIBRARY_PATH": f"{MUJOCO_DIR}/bin", "MUJOCO_PY_FORCE_CPU": "1"}
 
 
