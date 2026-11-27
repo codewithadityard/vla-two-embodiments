@@ -1,0 +1,54 @@
+--- a/datasets/traj_dset.py	2026-11-27 18:23:41.377736662 +0000
++++ b/datasets/traj_dset.py	2026-11-27 18:23:58.662400613 +0000
+@@ -91,11 +91,17 @@
+ 
+     def __getitem__(self, idx):
+         i, start, end = self.slices[idx]
+-        obs, act, state, _ = self.dataset[i]
+-        for k, v in obs.items():
+-            obs[k] = v[start:end:self.frameskip]
+-        state = state[start:end:self.frameskip]
+-        act = act[start:end]
++        base, j = self.dataset, i
++        while isinstance(base, Subset):  # P2 frame-level reader: find the underlying dataset and episode index
++            base, j = base.dataset, base.indices[j]
++        if getattr(base, "obs_mm", None) is not None:
++            obs, act, state = base.get_window(j, start, end, self.frameskip)
++        else:  # official path
++            obs, act, state, _ = self.dataset[i]
++            for k, v in obs.items():
++                obs[k] = v[start:end:self.frameskip]
++            state = state[start:end:self.frameskip]
++            act = act[start:end]
+         act = rearrange(act, "(n f) d -> n (f d)", n=self.num_frames)  # concat actions
+         return tuple([obs, act, state])
+ 
+--- a/datasets/wall_dset.py	2026-11-27 18:23:25.415003114 +0000
++++ b/datasets/wall_dset.py	2026-11-27 18:23:58.662400613 +0000
+@@ -67,6 +67,10 @@
+ 
+         self.actions = (self.actions - self.action_mean) / self.action_std
+         self.proprios = (self.proprios - self.proprio_mean) / self.proprio_std
++        # P2 frame-level reader: obses.npy = every obses/episode_XXX.pth stacked (same float32 values), memory-mapped,
++        # so a training sample reads only the frames it uses instead of a whole 30.7 MB episode file
++        mm = self.data_path / "obses.npy"
++        self.obs_mm = np.load(mm, mmap_mode="r") if mm.exists() else None
+ 
+     def get_seq_length(self, idx):
+         return self.traj_len
+@@ -93,6 +97,15 @@
+         obs = {"visual": image,"proprio": proprio}
+         return obs, act, state, {'fix_door_location': door_location[0], 'fix_wall_location': wall_location[0]}
+ 
++    def get_window(self, idx, start, end, frameskip):
++        """Same output as get_frames(idx, range(T)) followed by TrajSlicerDataset's slicing, but reads and
++        transforms only frames start:end:frameskip (the transform works frame by frame)."""
++        image = torch.from_numpy(np.ascontiguousarray(self.obs_mm[idx, start:end:frameskip])) / 255
++        if self.transform:
++            image = self.transform(image)
++        obs = {"visual": image, "proprio": self.proprios[idx, start:end:frameskip]}
++        return obs, self.actions[idx, start:end], self.states[idx, start:end:frameskip]
++
+     def __getitem__(self, idx):
+         return self.get_frames(idx, range(self.get_seq_length(idx)))
+ 
