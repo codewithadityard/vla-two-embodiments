@@ -29,7 +29,8 @@ def sh(cmd, **kw):
 
 
 def uv_pip(*args):
-    sh([sys.executable, "-m", "uv", "pip", "install", "--python", str(PY), *args])
+    # --no-cache: no second copy of the ~4.5 GB torch/CUDA wheels (P2-R0 v1 ran out of disk)
+    sh([sys.executable, "-m", "uv", "pip", "install", "--no-cache", "--python", str(PY), *args])
 
 
 def clone():
@@ -45,7 +46,8 @@ def make_venv():
 
 
 def env_pins():
-    """{normalized package name: 'name==version'} from the repo's environment.yaml (pip section + numpy)."""
+    """{normalized package name: 'name==version'} from the repo's environment.yaml: pip pins, plus conda pins
+    (name=version=build) for packages that pip also provides (e.g. numpy, setuptools)."""
     import yaml
     deps = yaml.safe_load((REPO / "environment.yaml").read_text())["dependencies"]
     pins = {}
@@ -54,8 +56,9 @@ def env_pins():
             for p in d.get("pip", []):
                 if "==" in p:
                     pins[norm(p.split("==")[0])] = p
-        elif isinstance(d, str) and d.startswith("numpy="):
-            pins["numpy"] = "numpy==" + d.split("=")[1]
+        elif isinstance(d, str) and d.count("=") >= 1 and not d.startswith(("python=", "_", "lib")):
+            name, version = d.split("=")[:2]
+            pins.setdefault(norm(name), f"{name}=={version}")
     return pins
 
 
@@ -86,5 +89,12 @@ def osf_files():
 
 def download(url, dest):
     dest.parent.mkdir(parents=True, exist_ok=True)
-    sep = "&" if "?" in url else "?"
-    sh(["curl", "-sSL", "--fail", "-o", str(dest), f"{url}{sep}view_only={OSF_VIEW_ONLY}"])
+    if "view_only" not in url:
+        url += ("&" if "?" in url else "?") + f"view_only={OSF_VIEW_ONLY}"
+    sh(["curl", "-sSL", "--fail", "-o", str(dest), url])
+
+
+def disk(label):
+    """Print free space where the venv (/tmp) and outputs (/kaggle/working) live."""
+    print(f"[disk] {label}:", flush=True)
+    subprocess.run(["df", "-h", "/tmp", "/kaggle/working"])

@@ -19,7 +19,7 @@ from pathlib import Path
 
 import yaml
 
-from scripts.p2_env import COMMIT, P2_OUT, PY, REPO, clone, download, env_pins, make_venv, norm, osf_files, uv_pip
+from scripts.p2_env import COMMIT, P2_OUT, PY, REPO, clone, disk, download, env_pins, make_venv, norm, osf_files, uv_pip
 
 MODULE_TO_PACKAGE = {"cv2": "opencv-python", "PIL": "pillow", "yaml": "pyyaml", "sklearn": "scikit-learn",
                      "skimage": "scikit-image", "hydra": "hydra-core", "mujoco_py": "mujoco-py",
@@ -48,6 +48,7 @@ def discover_packages(modules, pins, max_rounds=40):
         if rc == 0:
             return True, installed, log
         if rc != 3:
+            print("import failed (not a missing module):\n" + out[-3000:], flush=True)
             log.append(out[-3000:])
             return False, installed, log
         top = re.search(r"^MISSING (\S+)", out, re.M).group(1).split(".")[0]  # stdout line, not stderr warnings
@@ -84,10 +85,12 @@ def main():
         print("PASS" if ok else "FAIL", name, detail, flush=True)
 
     # 1. repo + venv
+    disk("start")
     clone()
     make_venv()
     pins = env_pins()
-    uv_pip(pins["numpy"], pins.get("pyyaml", "pyyaml"))
+    uv_pip(*[pins[k] for k in ["numpy", "setuptools", "pyyaml"] if k in pins])
+    disk("after venv + torch")
     rc, out = venv_run("import sys, torch; print(sys.version.split()[0], torch.__version__)")
     check("venv: Python 3.9 + torch 2.3.0", rc == 0 and out.startswith("3.9") and "2.3.0" in out, out.strip())
 
@@ -105,6 +108,7 @@ def main():
     install_min = (time.time() - t0) / 60
 
     # 3. data + Wall checkpoint from OSF
+    disk("before downloads")
     files = osf_files()
     data_dir, ckpt_dir = P2_OUT / "data", P2_OUT / "checkpoints"
     zip_entry = [f for f in files if f[0].endswith("/wall_single.zip")]
@@ -128,6 +132,7 @@ def main():
         z.unlink()
     check("checkpoint zip contains Wall model files", wall_members, f"{len(wall_members)} entries")
     download_min = (time.time() - t1) / 60
+    disk("after downloads")
 
     # 4a. dataset
     rc, out = venv_run(f"""

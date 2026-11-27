@@ -21,5 +21,7 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 
 | 2026-11-26 23:39 | `vla-m34` v4 (`b5c5114`) | M3+M4 run (c): 13/13 PASS (overfit C 0.0008, A 0.0122; both smoke evals ran); rule S this run 18,831, approved S = 19,047 used | T4 x2 | 29.8 | `results/m34_checks.md` |
 | 2026-11-27 01:45 | `vla-pair-s0` v1 (`d79bdeb`) | M5: A_s0 (GPU 0) + C_s0 (GPU 1) at once, S = 19,047: all checks PASS; A_s0 40/50, C_s0 41/50; cache warming 16.7 min (both runs reading at once) | T4 x2 | 124.0 | `results/runs/A_s0.md`, `results/runs/C_s0.md`, `results/eval/` |
+| 2026-11-27 13:57 | `vla-p2-r0` v1 (`0a9fbb7`) | P2-R0: disk full while downloading wall_single.zip (uv cache held a second copy of the torch wheels); an import failed after wandb (error not printed); fixed | CPU (no GPU quota) | ~5 (crashed, no summary) | log only |
+
 
 **GPU total used: 423.4 min (7.1 h) + R1b pending** (CPU runs not counted).
