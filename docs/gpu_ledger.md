@@ -36,5 +36,6 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-27 15:36 | `vla-p2-r1` v2 (`eaedcb6`) | P2-R1: probes and planning failed building the DINOv2 encoder (torch.hub fetched today's dinov2 main, which needs Python >= 3.10); fixed by pinning the hub cache to dinov2 `e1277af` | T4 x2 | 10.3 | summary via CLI |
 | 2026-11-27 16:04 | `vla-p2-r1` v3 (`fdc55a8`) | P2-R1: 1/4 checks PASS. Decoder-on training probe and official planning ran out of T4 memory (16 GB) in the VQ-VAE decoder; decoder-off probe: 8.39 s/step, 554 steps/epoch = 77.5 min/epoch. Stopped for decisions | T4 x2 | 26.3 | `results/p2_r1.md` |
 | 2026-11-27 17:26 | `vla-pair-1` v1 (`9ddb884`) | M6 pair 1, S = 19047, 10 episodes/task, final checkpoints: both exit 0; B_s0 5/100, A_s1 76/100 | T4 x2 | 233.8 | `results/runs/{B_s0,A_s1}.md`, `results/eval/` |
+| 2026-11-27 18:56 | `vla-p2-r2` v1 (`bb9fe93`) | P2-R2: frame-level reader test FAILED: the one-time conversion (second 59 GB copy in /tmp) did not finish within its 20-min limit, then /tmp became read-only (likely a disk limit) and the run crashed before training. Per the approved rule: no 2x shown within 30 min, so option a (official reader, E = 2) | T4 x2 | 27.9 | summary via CLI |
 
-**GPU total used: 772.0 min (12.9 h) + R1b pending** (CPU runs not counted).
+**GPU total used: 799.9 min (13.3 h) + R1b pending** (CPU runs not counted).
