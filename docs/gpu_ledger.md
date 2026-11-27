@@ -33,5 +33,6 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-27 14:57 | `vla-p2-r0` v5 (`a563fe8`) | P2-R0: 10/10 PASS (venv + mujoco-py, imports, data 1920 x 50, checkpoint epoch 65 + hydra.yaml, config diff, success criterion) | CPU (no GPU quota) | 14.0 | `results/p2_r0.md` |
 
 | 2026-11-27 15:23 | `vla-p2-r1` v1 (`13ad13e`) | P2-R1: probes and planning failed at config composition (hydra-submitit-launcher plugin missing from the package list; fixed). Data check: pixels are float32 0-255 but not integer-valued | T4 x2 | 11.2 | summary via CLI |
+| 2026-11-27 15:36 | `vla-p2-r1` v2 (`eaedcb6`) | P2-R1: probes and planning failed building the DINOv2 encoder (torch.hub fetched today's dinov2 main, which needs Python >= 3.10); fixed by pinning the hub cache to dinov2 `e1277af` | T4 x2 | 10.3 | summary via CLI |
 
-**GPU total used: 501.6 min (8.4 h) + R1b pending** (CPU runs not counted).
+**GPU total used: 511.9 min (8.5 h) + R1b pending** (CPU runs not counted).

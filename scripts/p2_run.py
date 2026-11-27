@@ -15,10 +15,11 @@ import sys
 import time
 from pathlib import Path
 
-from scripts.p2_env import (COMMIT, DATA_DIR, PY, REPO, clone, extract_data, install_mujoco_py, make_venv, uv_pip,
-                            venv_env, write_constraints, env_pins)
+from scripts.p2_env import (COMMIT, DATA_DIR, PY, REPO, clone, env_pins, extract_data, install_mujoco_py, make_venv,
+                            sh, uv_pip, venv_env, write_constraints)
 
 REQUIREMENTS = Path("results/p2_requirements.txt")  # exact package set from P2-R0
+DINOV2_COMMIT = "e1277af2ba9496fbadf7aec6eba56e8d882d1e35"  # dinov2 main as of 2024-09-12 (commit of 2024-02-22)
 PROBE_MIN = 8
 # (override, source). Source "ckpt" = the official Wall checkpoint's hydra.yaml; "hw" = our hardware.
 TRAIN_OVERRIDES = [
@@ -53,6 +54,13 @@ def setup():
     # train.yaml / plan_wall.yaml name the submitit launcher in their defaults, so its plugin must be installed
     # for the configs to compose (P2-R0 installed it after writing p2_requirements.txt; P2-R1 v1 failed on this)
     uv_pip(env_pins()["hydra-submitit-launcher"])
+    # models/dino.py calls torch.hub.load("facebookresearch/dinov2", ...) unpinned, i.e. today's main, which now
+    # needs Python >= 3.10 (P2-R1 v2). torch.hub reuses its cache folder if present, so we place dinov2 at the main
+    # commit of the official checkpoint's training date (2024-09-12) there; the official code is unchanged.
+    hub = Path("/root/.cache/torch/hub/facebookresearch_dinov2_main")
+    if not hub.exists():
+        sh(["git", "clone", "-q", "https://github.com/facebookresearch/dinov2.git", str(hub)])
+        sh(["git", "-C", str(hub), "checkout", "-q", DINOV2_COMMIT])
     t1 = time.time()
     extract_data(find_input("p2/wall_single.zip"))
     ckpt_base = find_input("p2/checkpoints/outputs/wall_single/hydra.yaml").parents[2]
