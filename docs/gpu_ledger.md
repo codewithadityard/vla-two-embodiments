@@ -2,13 +2,15 @@
 
 One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Minutes are the notebook's own measured total time unless marked "Kaggle"; weekly budget ~30 h.
 
+## Week until 2026-11-28 (quota reset Sat 05:30 IST)
+
 | Date (UTC) | Notebook / version | Purpose | Accelerator | Minutes | Results |
 |---|---|---|---|---|---|
 | 2026-11-25 | 00_feasibility, run 1 | Feasibility: all 7 steps | T4 | 12.0 | `results/feasibility_run1.md` |
 | 2026-11-25 | 00_feasibility, run 2 | Rerun steps 3 and 5b | T4 | 3.9 | `results/feasibility_run2.md` |
 | 2026-11-26 15:19 | runner R0 (`d645daa`) | Runner smoke test: `pytest -q tests` (6 passed, 4 skipped) | CPU (no GPU quota) | 1.6 | pasted summary |
 | 2026-11-26 16:25 | runner R1 (`7bc3edd`) | M2 probe: 6/8 checks PASS (2 FAIL, see results) | T4 | 9.9 | `results/m2_probe.md` |
-| 2026-11-26 | runner R1b (`d2b8081`) | M2 probe rerun: 9/9 checks PASS; runner summary cell crashed after the script (path-parsing bug, fixed) | T4 | pending (summary crashed; read from Kaggle version page) | `results/m2_probe.md` |
+| 2026-11-26 | runner R1b (`d2b8081`) | M2 probe rerun: 9/9 checks PASS; runner summary cell crashed after the script (path-parsing bug, fixed) | T4 | unreconciled, previous quota week | `results/m2_probe.md` |
 | 2026-11-26 17:33 | CLI test `vla-cli-test` (`6a5e7bd`) | Kaggle CLI end-to-end test: `pytest -q tests` (8 passed, 4 skipped) | CPU (no GPU quota) | 1.6 | summary via CLI |
 | 2026-11-26 19:18 | runner R2 (`e122e30`, notebook7b470429e6) | M2 cache build, all 52,042 frames: 7/7 checks PASS; cache 14.29 GB in the version output (6.4 frames/s, 4 workers) | T4 | 139.0 | `results/m2_cache.md` |
 | 2026-11-26 20:46 | `vla-m34` v1 (`200f696`) | M3+M4 checks: 3/7 PASS (unit-test overfits, real-data overfits and step count S FAIL; see results) | T4 x2 (one used) | 72.5 | `results/m34_checks.md` |
@@ -40,6 +42,13 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-27 21:10 | `vla-p2-r2` v2 (`49f89d9`) | P2-R2 option a: training epoch 1 finished (554 steps in 116.8 min = 12.65 s/step, slower than R1's 8.39 probe), then validation ran out of T4 memory (official val loop runs the model forward without torch.no_grad at batch 128); official planning (no decoder) failed at wandb.init (service did not start; WANDB_MODE=disabled is not enough for plan.py's own wandb_logging) | T4 x2 | 125.9 | `results/p2_r2.md` |
 | 2026-11-27 21:31 | `vla-pair-2` v1 (`f1a72d7`) | M6 pair 2, S = 19047, 10 episodes/task, final checkpoints: both exit 0; C_s1 75/100, B_s1 4/100 | T4 x2 | 242.8 | `results/runs/{C_s1,B_s1}.md`, `results/eval/` |
 | 2026-11-28 02:53 | `vla-p2-r3` v1 (`6c85f08`) | P2-R3: 0/2 checks. CEM failed at config time (Hydra: `~planner.max_iter` cannot delete a null key). MPC-CEM hit our 300-min timeout after 4 MPC iterations (~75 min each on a T4): plan_wall.yaml has max_iter null, so the official loop only stops when all 50 pairs succeed; cumulative successes after iterations 1-4: 27, 44, 46, 46 of 50 (not a reported result). Stopped for decisions | T4 x2 | 307.2 | `results/p2_r3_v1.md` |
+
+**Previous quota week (until Sat 2026-11-28 00:00 UTC = 05:30 IST): 1475.8 min (24.6 h) + R1b (unreconciled, previous quota week)** (CPU runs not counted). `vla-p2-r3` ran across the reset (21:54–02:53 UTC) but Kaggle counted it in the previous week: the new week's quota read 00:13 after the gallery.
+
+## Week of 2026-11-28 (quota 30 h, resets Sat 2026-12-05 00:00 UTC = 05:30 IST)
+
+| Date (UTC) | Notebook / version | Purpose | Accelerator | Minutes | Results |
+|---|---|---|---|---|---|
 | 2026-11-28 03:08 | `vla-gallery` v1 (`ef0b10c`) | Video gallery, **demo, not part of reported results**: A_s0 on start state 10 of all 10 tasks (8 success, 2 fail), B_s0 on tasks 0-2 (3 fail); exit 0; 13 GIFs, largest 1.61 MB | T4 x2 | 13.5 | `results/video_gallery.md`, `docs/media/gallery/` |
 
-**GPU total used: 1489.3 min (24.8 h) + R1b pending** (CPU runs not counted).
+**This week: 13.5 min (0.2 h)**; Kaggle's quota line on 2026-11-28: "00:13 / 30 hrs".
