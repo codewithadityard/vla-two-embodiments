@@ -45,3 +45,13 @@ Deviations from papers or plans. One entry per deviation.
 ## M7 README (2026-11-27)
 - The plan's success-rate bar chart (`scripts/make_figures.py`) is not made: the laptop env has no matplotlib, and the README tables already carry the Wilson CIs. README numbers are filled by `scripts/make_readme.py` from `results/` and checked by `tests/test_readme.py`.
 - Videos: the plan's fixed rule (first success and first failure of A_s0 in episode order, plus one from B); the B video is fixed as B_s0 at the same start state as A_s0's first success (task 0, episode 0), so the only difference is the missing instruction.
+
+## P3: Meta-World MT10 (plan approved 2026-11-28, docs/p3_metaworld_plan.md)
+- Approved changes to the plan:
+  - Both head designs (shared padded head + embodiment token; separate heads).
+  - One seed for all models first. A second seed only for the two joint models, only if their results fall within each other's CIs, and only if the budget allows.
+- Chunk execution: `n_action_steps = 50` (with `chunk_size` 50), taken from `lerobot/smolvla_metaworld` `config.json` at revision `8d82bdf3487776404e5e863f585c9d5210b96d14`.
+  - Fixed in `configs/metaworld.yaml` before any eval and re-checked by `scripts.data_report_mw`.
+  - It is never changed based on eval results. This is the same as our LIBERO setting, so a shared head needs no special case.
+- Kaggle packages: `requirements-kaggle.txt` now installs `lerobot[libero,metaworld,smolvla]`, the same extras as the feasibility runs. The data report checks that MuJoCo stays at 3.8.1.
+- `minivla.data.fetch_sample` reads every `meta/episodes` file instead of only `chunk-000/file-000`. LIBERO-Goal has a single file, so its result is unchanged.

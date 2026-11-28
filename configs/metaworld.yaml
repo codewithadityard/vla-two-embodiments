@@ -1,0 +1,23 @@
+# P3: Meta-World MT10 (second embodiment). Pins only; model and training settings come from configs/base.yaml.
+data:
+  repo_id: lerobot/metaworld_mt50
+  revision: b46a1c185a2368660650a82ac5a5083a56722f48  # Hub commit, 2026-09-24
+  # Kaggle copies (gitignored)
+  meta_dir: data/metaworld_mt50_meta
+  lowdim_path: data/metaworld_mt50_lowdim.parquet
+  sample_path: data/metaworld_mt50_sample.parquet
+  # MT10 = metaworld.MT10() train classes (read on Kaggle from the installed metaworld, not typed here)
+
+# Reference policy whose eval settings we copy (approved 2026-11-28). n_action_steps is fixed before any eval,
+# from this pinned config, and is never changed based on eval results.
+reference_policy:
+  repo_id: lerobot/smolvla_metaworld
+  revision: 8d82bdf3487776404e5e863f585c9d5210b96d14  # Hub commit, 2026-10-12
+  n_action_steps: 50  # config.json at the revision above (chunk_size 50); re-read and checked by data_report_mw
+
+# LeRobot's Meta-World integration at the pinned LeRobot commit (b07adcc, notebooks/00_feasibility.ipynb)
+lerobot_commit: b07adcc5e3ce42c26a248236dbb3571f84c28c43
+
+split:
+  split_seed: 0
+  val_fraction: 0.1  # per task, by episode; at least 1 val episode per task (same rule as LIBERO)

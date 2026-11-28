@@ -1,6 +1,7 @@
 # Installed on Kaggle by notebooks/runner.ipynb (never on the laptop).
-# Same LeRobot pin and transformers version as the feasibility runs (results/feasibility_run1.md).
-lerobot[libero,smolvla] @ git+https://github.com/huggingface/lerobot.git@b07adcc5e3ce42c26a248236dbb3571f84c28c43
+# Same LeRobot pin, extras and transformers version as the feasibility runs (results/feasibility_run1.md);
+# the metaworld extra was added for P3 (2026-11-28).
+lerobot[libero,metaworld,smolvla] @ git+https://github.com/huggingface/lerobot.git@b07adcc5e3ce42c26a248236dbb3571f84c28c43
 transformers==5.22.2
 PyYAML==6.0.4
 pytest==9.2.0

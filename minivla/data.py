@@ -44,7 +44,8 @@ def fetch_lowdim(repo_id, revision, out_path):
 
 def fetch_sample(repo_id, revision, meta_dir, episodes, out_path):
     """Save all columns (images included) for a few episodes only, as one local parquet."""
-    eps = pq.read_table(Path(meta_dir) / "meta/episodes/chunk-000/file-000.parquet").to_pandas()
+    files = sorted(Path(meta_dir, "meta/episodes").glob("*/*.parquet"))  # LIBERO-Goal: one file; MT50: may be more
+    eps = pa.concat_tables([pq.read_table(f) for f in files]).to_pandas()
     eps = eps[eps["episode_index"].isin(episodes)]
     fs, _ = _hub_data_files(repo_id, revision)
     parts = []
