@@ -102,7 +102,7 @@ Picked by a fixed rule written down in the plan before the evals: the first succ
 
 - Code and checkpoint: the official [DINO-WM](https://github.com/gaoyuezhou/dino_wm) repo (pinned commit) and its released Wall checkpoint (epoch 65).
 - Setup: run in the repo's own Python 3.9 / torch 2.3 environment.
-- What was compared: MPC-CEM (paper Table 1) on 50 start/goal pairs with seed 99. Plain CEM (paper Table 8): planned; not run due to this week's GPU budget.
+- What was compared: MPC-CEM (paper Table 1) and plain open-loop CEM (paper Table 8), each on the same 50 start/goal pairs with seed 99.
 - Success rule: the final position is within 4.5 of the goal, computed from simulator states.
 - The image decoder is not loaded. It only draws comparison plots and does not fit a 16 GB T4.
 - Our own training was dropped: one epoch takes about 2.5 h on a T4, and the official validation loop runs out of memory at batch 128 ([results/p2_r2.md](results/p2_r2.md)).
@@ -113,11 +113,12 @@ Picked by a fixed rule written down in the plan before the evals: the first succ
 | Planner | Successes | Rate (%) | Wilson 95 % CI (%) | Paper | Stopped |
 |---|---|---|---|---|---|
 | MPC-CEM (plan_wall.yaml) | 46/50 | 92.0 | 81.2–96.8 | 0.96 (Table 1) | after 4 MPC iterations (our 300-min limit; ~75 min per iteration on a T4) |
-| Plain CEM, open loop (conf/planner/cem.yaml) | planned; not run due to this week's GPU budget | – | – | 0.74 (Table 8) | – |
+| Plain CEM, open loop (conf/planner/cem.yaml) | 14/50 | 28.0 | 17.5–41.7 | 0.74 (Table 8) | after the 30 CEM optimisation steps (finished; 190.8 min) |
 
 - Cumulative successes after MPC iterations 1–4: 27, 44, 46, 46 of 50. The paper's 0.96 lies inside our CI.
 - The paper does not state its iteration limit (checked in `results/p2_r3.md`), so "after 4 iterations" is our stopping point, not the paper's.
-- Plain CEM: planned; not run due to this week's GPU budget. Its P2-R3 v1 run crashed at start-up because of our Hydra override (`~planner.max_iter` cannot delete a null key). That is fixed in `scripts/p2_run.py` (cem.yaml merged as the official sweep does) and ready to run with `python -m scripts.p2_run r3 cem` (estimate 3.5–4 GPU-h).
+- **Plain CEM: 14/50 (28%, CI 17.5–41.7); the paper reports 0.74, outside our CI, so this does not reproduce.** Run `vla-p2-r3cem` (commit `d158e21`, fixed settings: cem.yaml merged as the official sweep does; `results/p2_r3_cem.md`). The official `final_eval/success_rate` is 0.28.
+- The official code also evaluates after every CEM step (`eval_every: 1`). The rate was 0.0, 0.02, 0.24, 0.48, 0.46, 0.44, 0.48, 0.52, 0.58, 0.54 over steps 1–10, identical to MPC-CEM's first iteration (same pairs, same optimisation). It peaked at 0.58 (step 9) and fell to 0.28 by step 30: more optimisation steps lowered the real success rate. We report the final step, per the protocol, and do not pick a step by its result.
 <!-- END p2 -->
 
 Open-loop prediction error vs. horizon of the official checkpoint (1–9 model steps, 192 held-out trajectories, with a "nothing moves" baseline): [results/p2_r4.md](results/p2_r4.md).
@@ -131,7 +132,7 @@ Spec: [docs/p2_spec.md](docs/p2_spec.md).
 - **Single embodiment:** only the LIBERO Franka arm. Meta-World was cut this week.
 - **Two seeds per config, 100 episodes per model:** a per-config CI is about ±6 points and a per-model CI about ±8–9 points, too wide to resolve A vs. C.
 - **Small, budget-limited training:** a small expert, one fixed step count, and only the final checkpoint.
-- **Project 2:** our own training was not reproduced, the decoder plots are missing, MPC-CEM was stopped by our time limit after 4 MPC iterations, plain CEM was not run (GPU budget), and 50 start/goal pairs give wide CIs.
+- **Project 2:** our own training was not reproduced, the decoder plots are missing, MPC-CEM was stopped by our time limit after 4 MPC iterations, plain CEM did not reproduce the paper's 0.74, and 50 start/goal pairs give wide CIs.
 
 ## Next steps
 
