@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pyarrow as pa
 import pyarrow.parquet as pq
 
 from minivla import data
@@ -72,7 +73,7 @@ def main():
     check("no NaN/Inf in state, action, timestamp", all(np.isfinite(frames[k]).all() for k in ["state", "action", "timestamp"]))
     ts_err = float(np.abs(frames["timestamp"] - frames["frame_index"] / info["fps"]).max())
     check("timestamp == frame_index / fps", ts_err < 1e-4, f"max abs diff {ts_err:.2e} s")
-    meta_eps = pq.concat_tables([pq.read_table(p) for p in sorted(Path(meta, "meta/episodes").glob("*/*.parquet"))]).to_pandas()
+    meta_eps = pa.concat_tables([pq.read_table(p) for p in sorted(Path(meta, "meta/episodes").glob("*/*.parquet"))]).to_pandas()
     meta_len = dict(zip(meta_eps["episode_index"], meta_eps["length"]))
     check("episode lengths match meta/episodes", all(meta_len[e] == lengths[e] for e in ep_task_all))
 
