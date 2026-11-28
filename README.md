@@ -120,6 +120,8 @@ Picked by a fixed rule written down in the plan before the evals: the first succ
 - Plain CEM: planned; not run due to this week's GPU budget. Its P2-R3 v1 run crashed at start-up because of our Hydra override (`~planner.max_iter` cannot delete a null key). That is fixed in `scripts/p2_run.py` (cem.yaml merged as the official sweep does) and ready to run with `python -m scripts.p2_run r3 cem` (estimate 3.5–4 GPU-h).
 <!-- END p2 -->
 
+Open-loop prediction error vs. horizon of the official checkpoint (1–9 model steps, 192 held-out trajectories, with a "nothing moves" baseline): [results/p2_r4.md](results/p2_r4.md).
+
 Spec: [docs/p2_spec.md](docs/p2_spec.md).
 
 ## Limitations

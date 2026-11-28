@@ -50,5 +50,6 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | Date (UTC) | Notebook / version | Purpose | Accelerator | Minutes | Results |
 |---|---|---|---|---|---|
 | 2026-11-28 03:08 | `vla-gallery` v1 (`ef0b10c`) | Video gallery, **demo, not part of reported results**: A_s0 on start state 10 of all 10 tasks (8 success, 2 fail), B_s0 on tasks 0-2 (3 fail); exit 0; 13 GIFs, largest 1.61 MB | T4 x2 | 13.5 | `results/video_gallery.md`, `docs/media/gallery/` |
+| 2026-11-28 04:38 | `vla-p2-r4` v1 (`a3d9da6`) | P2-R4: open-loop prediction error vs. horizon, official checkpoint, 192 held-out trajectories, decoder off: 3/3 checks PASS | T4 x2 | 10.5 | `results/p2_r4.md` |
 
-**This week: 13.5 min (0.2 h)**; Kaggle's quota line on 2026-11-28: "00:13 / 30 hrs".
+**This week: 24.0 min (0.4 h)**; Kaggle's quota line on 2026-11-28: "00:13 / 30 hrs".
