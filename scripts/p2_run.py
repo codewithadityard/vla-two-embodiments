@@ -8,6 +8,8 @@
                                   than R1's decoder-off probe), then our reduced-budget training (E epochs, GPU 0)
                                   while the official checkpoint is planned without its decoder (GPU 1), then
                                   planning with our final checkpoint
+  python -m scripts.p2_run r3     official checkpoint, MPC-CEM (GPU 0) and plain CEM (GPU 1), decoder off
+  python -m scripts.p2_run r3 cem plain CEM only (planned; not run due to this week's GPU budget)
 
 Needs the P2-R0 run output attached (wall_single.zip + the Wall checkpoint). Writes results/p2_r1.md.
 Training settings: the official checkpoint's saved hydra.yaml where it has the key, else the repo's train.yaml;
@@ -389,31 +391,37 @@ def write_r2(checks, R):
 
 
 # ---------------------------------------------------------------- R3
-# Plain CEM = the repo's conf/planner/cem.yaml (opt_steps 30), written as overrides of plan_wall.yaml's planner block;
-# MPC-CEM = plan_wall.yaml unchanged. plan.py sets the horizon to goal_H (5) for both.
+# Plain CEM = the repo's conf/planner/cem.yaml (opt_steps 30) merged onto plan_wall.yaml's planner block, as the
+# official sweep does (plan.py build_plan_cfg_dicts: OmegaConf.merge). The MPC keys it leaves (max_iter,
+# n_taken_actions, sub_planner) are ignored by CEMPlanner's **kwargs. They are not deleted: Hydra cannot delete a key
+# whose value is null (`~planner.max_iter` crashed P2-R3 v1). MPC-CEM = plan_wall.yaml unchanged. plan.py sets the
+# horizon to goal_H (5) for both.
 PLANNERS = {
     "mpc_cem": ("MPC-CEM (plan_wall.yaml)", 0.96, "Table 1", []),
     "cem": ("CEM, open loop (conf/planner/cem.yaml)", 0.74, "Table 8",
-            ["planner._target_=planning.cem.CEMPlanner", "~planner.max_iter", "~planner.n_taken_actions",
-             "~planner.sub_planner", "+planner.horizon=5", "+planner.topk=30", "+planner.num_samples=300",
-             "+planner.var_scale=1", "+planner.opt_steps=30", "+planner.eval_every=1", "planner.name=cem"]),
+            ["planner._target_=planning.cem.CEMPlanner", "+planner.horizon=5", "+planner.topk=30",
+             "+planner.num_samples=300", "+planner.var_scale=1", "+planner.opt_steps=30", "+planner.eval_every=1",
+             "planner.name=cem"]),
 }
 N_EVALS = 50  # plan_wall.yaml
 
 
-def r3():
+def r3(*only):
     """Reproduction of evaluation and planning with the official checkpoint (training not reproduced, approved
-    option c): MPC-CEM on GPU 0 and plain CEM on GPU 1 at once, decoder off, 50 start/goal pairs, seed 99."""
+    option c): MPC-CEM on GPU 0 and plain CEM on GPU 1 at once, decoder off, 50 start/goal pairs, seed 99.
+    `r3 cem` runs only the named planner(s) and writes results/p2_r3_cem.md (so results/p2_r3.md is kept)."""
+    planners = {k: PLANNERS[k] for k in (only or PLANNERS)}
+    out = Path("results/p2_r3.md" if not only else f"results/p2_r3_{'_'.join(only)}.md")
     from minivla.stats import wilson
     log_dir = P2_OUT / "r3_logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     ckpt_base, install_min, extract_min = setup()
     base = official_ckpt_without_decoder(ckpt_base)
-    started = {k: plan_start("wall_single", base, log_dir, f"r3_{k}", gpu=i, extra=PLANNERS[k][3])
-               for i, k in enumerate(PLANNERS)}
+    started = {k: plan_start("wall_single", base, log_dir, f"r3_{k}", gpu=i, extra=planners[k][3])
+               for i, k in enumerate(planners)}
     res = {k: plan_wait(s, 300) for k, s in started.items()}
     checks, rows = [], []
-    for k, (name, paper, table, extra) in PLANNERS.items():
+    for k, (name, paper, table, extra) in planners.items():
         r = res[k]
         sr = next((v for key, v in r["final"].items() if "success_rate" in key), None)
         ok = r["exit"] == 0 and sr is not None
@@ -432,16 +440,16 @@ def r3():
          "decoder not loaded (it only plots; success is `env.eval_state` on simulator states; docs/deviations.md)",
          f"- 50 start/goal pairs (plan_wall.yaml: seed 99, goal_source random_state, goal_H 5); success = "
          "final distance to goal < 4.5; setup {:.1f} min, data extraction {:.1f} min".format(install_min, extract_min),
-         "- MPC-CEM and CEM ran at the same time, one per GPU (same seed, so the same 50 pairs)", "",
+         "- Planners: " + ", ".join(v[0] for v in planners.values()) + " (one per GPU, same seed, so the same 50 pairs)", "",
          "## Checks", "", "| Check | Result | Detail |", "|---|---|---|"]
     L += [f"| {n} | {'PASS' if ok else '**FAIL**'} | {d} |" for n, ok, d in checks]
     L += ["", "## Results", "", "| Planner | Successes | Rate (%) | Wilson 95 % CI (%) | Paper | Minutes |",
           "|---|---|---|---|---|---|", *rows]
-    for k in PLANNERS:
+    for k in planners:
         L += ["", f"### {k}: final logs.json entry, last output", "", "```json",
               json.dumps(res[k]["final"], indent=1)[:3000], "```", "", "```", res[k]["tail"], "```"]
     Path("results").mkdir(exist_ok=True)
-    Path("results/p2_r3.md").write_text("\n".join(L) + "\n")
+    out.write_text("\n".join(L) + "\n")
     print("\n".join(L[:30]), flush=True)
     sys.exit(0 if all(ok for _, ok, _ in checks) else 1)
 
