@@ -6,7 +6,7 @@ data:
   meta_dir: data/metaworld_mt50_meta
   lowdim_path: data/metaworld_mt50_lowdim.parquet
   sample_path: data/metaworld_mt50_sample.parquet
-  # MT10 = metaworld.MT10() train classes (read on Kaggle from the installed metaworld, not typed here)
+  # MT10 = MT10_V3 in the installed metaworld's env_dict.py (read on Kaggle, not typed here)
 
 # Reference policy whose eval settings we copy (approved 2026-11-28). n_action_steps is fixed before any eval,
 # from this pinned config, and is never changed based on eval results.

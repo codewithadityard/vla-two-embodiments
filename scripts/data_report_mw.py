@@ -31,6 +31,18 @@ def lerobot_metaworld_config():
     return json.loads(path.read_text()), path
 
 
+def mt10_names():
+    """MT10 env names from the installed metaworld's env_dict.py (`MT10_V3 = _get_env_dict([...])`), read with ast.
+    Importing metaworld imports mujoco's renderer, which needs OpenGL; the Kaggle CPU session has none (P3-0 v2)."""
+    import ast
+    import importlib.util
+    src = Path(importlib.util.find_spec("metaworld").submodule_search_locations[0]) / "env_dict.py"
+    for node in ast.parse(src.read_text()).body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "MT10_V3" for t in node.targets):
+            return sorted(ast.literal_eval(node.value.args[0])), src
+    raise ValueError(f"MT10_V3 not found in {src}")
+
+
 def reference_policy_config(rcfg):
     from huggingface_hub import hf_hub_download
     out = {}
@@ -47,6 +59,12 @@ def main():
 
     def check(name, ok, detail=""):
         checks.append((name, bool(ok), detail))
+
+    # --- cheap parts first, so a failure here costs minutes, not the 30-min column download ---
+    mt10, mt10_src = mt10_names()
+    lr_cfg, lr_path = lerobot_metaworld_config()
+    ref = reference_policy_config(rcfg)
+    versions = {p: md.version(p) for p in ["lerobot", "metaworld", "mujoco", "gymnasium"]}
 
     # --- metadata, all non-image columns ---
     repo, rev, meta = dcfg["repo_id"], dcfg["revision"], dcfg["meta_dir"]
@@ -78,7 +96,6 @@ def main():
     check("episode lengths match meta/episodes", all(meta_len[e] == lengths[e] for e in ep_task_all))
 
     # --- task names: dataset instruction -> Meta-World env name (LeRobot's TASK_DESCRIPTIONS), MT10 from metaworld ---
-    lr_cfg, lr_path = lerobot_metaworld_config()
     desc_to_env = {}
     for env_name, text in lr_cfg["TASK_DESCRIPTIONS"].items():
         desc_to_env.setdefault(text, []).append(env_name)
@@ -87,11 +104,9 @@ def main():
           all(len(v) == 1 for v in env_of.values()),
           f"{sum(len(v) == 1 for v in env_of.values())}/{len(tasks)}; unmatched: "
           f"{[tasks[t] for t, v in env_of.items() if len(v) != 1][:5]}")
-    import metaworld
-    mt10 = sorted(metaworld.MT10().train_classes)
     task_of_env = {v[0]: t for t, v in env_of.items() if len(v) == 1}
     mt10_tasks = {name: task_of_env.get(name) for name in mt10}
-    check("metaworld.MT10() has 10 tasks, all in the dataset", len(mt10) == 10 and None not in mt10_tasks.values(),
+    check("metaworld MT10_V3 has 10 tasks, all in the dataset", len(mt10) == 10 and None not in mt10_tasks.values(),
           f"{mt10}; missing: {[k for k, v in mt10_tasks.items() if v is None]}")
 
     # --- MT10 subset, split, stats ---
@@ -127,12 +142,10 @@ def main():
     check("exactly one camera", len(cam_rows) == 1, f"{len(cam_rows)}")
 
     # --- reference policy (eval settings we copy) and env versions ---
-    ref = reference_policy_config(rcfg)
     nas = ref["config.json"]["n_action_steps"]
     check("smolvla_metaworld n_action_steps at the pinned revision == configs/metaworld.yaml",
           nas == rcfg["n_action_steps"], f"{nas} vs {rcfg['n_action_steps']}")
     env_cfg = ref["train_config.json"].get("env", {})
-    versions = {p: md.version(p) for p in ["lerobot", "metaworld", "mujoco", "gymnasium"]}
     check("MuJoCo version unchanged by the metaworld extra (3.8.1, as in all Project 1 runs)",
           versions["mujoco"] == "3.8.1", versions["mujoco"])
 
@@ -142,7 +155,7 @@ def main():
          "and the pinned configs; nothing is typed by hand.", "", "## Source", ""]
     L += table(["Item", "Value"], [
         ["Dataset", f"`{repo}`"], ["Hub revision", f"`{rev}`"], ["LeRobot format", info["codebase_version"]],
-        ["Robot", info["robot_type"]], ["MT10 task list", "`metaworld.MT10().train_classes` (installed metaworld)"],
+        ["Robot", info["robot_type"]], ["MT10 task list", f"`MT10_V3` in the installed metaworld's `{mt10_src.name}`, read without importing metaworld (its import needs OpenGL, absent on the CPU session)"],
         ["Instruction -> env name", f"exact match in LeRobot's `TASK_DESCRIPTIONS` (`{lr_path.name}` at the pinned LeRobot commit)"],
         ["How it was read", "non-image columns of every file via `HfFileSystem` + pyarrow column selection; "
          "images only for the first episode of each MT10 task"],
