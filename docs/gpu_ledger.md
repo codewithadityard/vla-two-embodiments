@@ -54,6 +54,6 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-28 09:01 | `vla-p2-r3cem` v1 (`d158e21`) | P2-R3 plain CEM, fixed settings: 1/1 check PASS; 14/50 = 28 % (CI 17.5–41.7), paper 0.74. Queued ~25–85 min on Kaggle before starting | T4 x2 | 198.1 | `results/p2_r3_cem.md`, `results/p2_r3.md` |
 | 2026-11-28 12:26 | `vla-p3-data` v1 (`be84612`) | P3-0 data report: crashed before any check (my bug: `pq.concat_tables` instead of `pa.concat_tables`) | CPU (no GPU quota) | 15.5 | summary via CLI |
 | 2026-11-28 13:01 | `vla-p3-data` v2 (`a06cdeb`) | P3-0 data report: crashed before any check: `import metaworld` imports MuJoCo's renderer, which needs OpenGL, absent on the CPU session | CPU (no GPU quota) | 33.7 | summary via CLI |
-| 2026-11-28 13:14 | `vla-p3-data` v3 (`67292c0`) | P3-0 data report: Kaggle status ERROR after ~10 min; no output or log available through the CLI | CPU (no GPU quota) | ~10 (Kaggle) | none |
+| 2026-11-28 13:14 | `vla-p3-data` v3 (`67292c0`) | P3-0 data report: Kaggle status ERROR after ~10 min. Checked 2026-11-28: `kernels output` returns no files and no log for this session, `kernels logs` is empty, and the status record holds only `ERROR` (no failure message); `kernels files` lists only v1's log.txt and summary.md. So a notebook cell raised before the summary cell (clone, install or summary), but which one is unknown | CPU (no GPU quota) | ~10 (Kaggle) | none |
 
 **This week: 222.1 min (3.7 h)**; Kaggle's quota line on 2026-11-28: "00:13 / 30 hrs".

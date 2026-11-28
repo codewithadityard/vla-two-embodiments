@@ -117,7 +117,8 @@ Picked by a fixed rule written down in the plan before the evals: the first succ
 
 - Cumulative successes after MPC iterations 1–4: 27, 44, 46, 46 of 50. The paper's 0.96 lies inside our CI.
 - The paper does not state its iteration limit (checked in `results/p2_r3.md`), so "after 4 iterations" is our stopping point, not the paper's.
-- **Plain CEM: 14/50 (28%, CI 17.5–41.7); the paper reports 0.74, outside our CI, so this does not reproduce.** Run `vla-p2-r3cem` (commit `d158e21`, fixed settings: cem.yaml merged as the official sweep does; `results/p2_r3_cem.md`). The official `final_eval/success_rate` is 0.28.
+- **Plain CEM does not reproduce (28% vs 0.74). Leading hypothesis, not proven: the released checkpoint is from epoch 65, not 100; MPC's replanning can compensate for a weaker model, single-shot CEM cannot.**
+- Plain CEM: 14/50 (28%, CI 17.5–41.7); the paper's 0.74 is outside our CI. CPU-only comparison of paper, repo and our run: `results/p2_cem_investigation.md`. Run `vla-p2-r3cem` (commit `d158e21`, fixed settings: cem.yaml merged as the official sweep does; `results/p2_r3_cem.md`). The official `final_eval/success_rate` is 0.28.
 - The official code also evaluates after every CEM step (`eval_every: 1`). The rate was 0.0, 0.02, 0.24, 0.48, 0.46, 0.44, 0.48, 0.52, 0.58, 0.54 over steps 1–10, identical to MPC-CEM's first iteration (same pairs, same optimisation). It peaked at 0.58 (step 9) and fell to 0.28 by step 30: more optimisation steps lowered the real success rate. We report the final step, per the protocol, and do not pick a step by its result.
 <!-- END p2 -->
 

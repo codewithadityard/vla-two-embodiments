@@ -2,7 +2,7 @@
 
 Each run tag gets its own private Kaggle notebook "<owner>/vla-<tag>", so two runs can go at once.
 
-  python -m scripts.kaggle_run push TAG --module scripts.x [--args "a b c"] [--commit HASH] [--gpu] [--dataset owner/slug] [--kernel-source owner/notebook] --purpose "..."
+  python -m scripts.kaggle_run push TAG --module scripts.x [--args "a b c"] [--commit HASH] [--gpu] [--no-install] [--dataset owner/slug] [--kernel-source owner/notebook] --purpose "..."
   python -m scripts.kaggle_run status TAG
   python -m scripts.kaggle_run summary TAG      # downloads ONLY outputs/summary.md (small), prints it
 """
@@ -35,7 +35,8 @@ def push(a):
         sys.exit(f"commit {commit[:12]} is not on origin/main yet: push first")
     folder = WORK / a.tag
     folder.mkdir(parents=True, exist_ok=True)
-    run = {"commit": commit, "module": a.module, "args": shlex.split(a.args), "install": True, "purpose": a.purpose}
+    run = {"commit": commit, "module": a.module, "args": shlex.split(a.args), "install": not a.no_install,
+           "purpose": a.purpose}
     (folder / "runner.ipynb").write_text(json.dumps(make_notebook(config_cell(run)), indent=1))
     meta = {"id": ref(a.tag), "title": f"vla-{a.tag}", "code_file": "runner.ipynb", "language": "python",
             "kernel_type": "notebook", "is_private": True, "enable_gpu": a.gpu, "enable_internet": True,
@@ -73,6 +74,7 @@ if __name__ == "__main__":
     pp.add_argument("--commit")
     pp.add_argument("--purpose", required=True)
     pp.add_argument("--gpu", action="store_true")
+    pp.add_argument("--no-install", action="store_true")  # skip requirements-kaggle.txt (Kaggle preinstalls only)
     pp.add_argument("--accelerator", default="NvidiaTeslaT4")
     pp.add_argument("--dataset", action="append", default=[])
     pp.add_argument("--kernel-source", action="append", default=[])  # attach another notebook's output
