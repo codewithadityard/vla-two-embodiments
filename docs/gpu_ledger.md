@@ -52,5 +52,8 @@ One row per Kaggle run (CPU runs too, for the record; they use no GPU quota). Mi
 | 2026-11-28 03:08 | `vla-gallery` v1 (`ef0b10c`) | Video gallery, **demo, not part of reported results**: A_s0 on start state 10 of all 10 tasks (8 success, 2 fail), B_s0 on tasks 0-2 (3 fail); exit 0; 13 GIFs, largest 1.61 MB | T4 x2 | 13.5 | `results/video_gallery.md`, `docs/media/gallery/` |
 | 2026-11-28 04:38 | `vla-p2-r4` v1 (`a3d9da6`) | P2-R4: open-loop prediction error vs. horizon, official checkpoint, 192 held-out trajectories, decoder off: 3/3 checks PASS | T4 x2 | 10.5 | `results/p2_r4.md` |
 | 2026-11-28 09:01 | `vla-p2-r3cem` v1 (`d158e21`) | P2-R3 plain CEM, fixed settings: 1/1 check PASS; 14/50 = 28 % (CI 17.5–41.7), paper 0.74. Queued ~25–85 min on Kaggle before starting | T4 x2 | 198.1 | `results/p2_r3_cem.md`, `results/p2_r3.md` |
+| 2026-11-28 12:26 | `vla-p3-data` v1 (`be84612`) | P3-0 data report: crashed before any check (my bug: `pq.concat_tables` instead of `pa.concat_tables`) | CPU (no GPU quota) | 15.5 | summary via CLI |
+| 2026-11-28 13:01 | `vla-p3-data` v2 (`a06cdeb`) | P3-0 data report: crashed before any check: `import metaworld` imports MuJoCo's renderer, which needs OpenGL, absent on the CPU session | CPU (no GPU quota) | 33.7 | summary via CLI |
+| 2026-11-28 13:14 | `vla-p3-data` v3 (`67292c0`) | P3-0 data report: Kaggle status ERROR after ~10 min; no output or log available through the CLI | CPU (no GPU quota) | ~10 (Kaggle) | none |
 
 **This week: 222.1 min (3.7 h)**; Kaggle's quota line on 2026-11-28: "00:13 / 30 hrs".
