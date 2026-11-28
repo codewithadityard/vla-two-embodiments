@@ -108,7 +108,15 @@ Picked by a fixed rule written down in the plan before the evals: the first succ
 - Our own training was dropped: one epoch takes about 2.5 h on a T4, and the official validation loop runs out of memory at batch 128 ([results/p2_r2.md](results/p2_r2.md)).
 
 <!-- BEGIN p2 -->
-_P2-R3 (MPC-CEM vs. CEM with the official checkpoint) has not finished yet; this block is filled from `results/p2_r3.md`._
+**MPC-CEM: 46/50 (92%, CI 81.2–96.8) after 4 MPC iterations, stopped by our time limit; the paper reports 0.96; the intervals are consistent.**
+
+| Planner | Successes | Rate (%) | Wilson 95 % CI (%) | Paper | Stopped |
+|---|---|---|---|---|---|
+| MPC-CEM (plan_wall.yaml) | 46/50 | 92.0 | 81.2–96.8 | 0.96 (Table 1) | after 4 MPC iterations (our 300-min limit; ~75 min per iteration on a T4) |
+
+- Cumulative successes after MPC iterations 1–4: 27, 44, 46, 46 of 50. The paper's 0.96 lies inside our CI.
+- The paper does not state its iteration limit (checked in `results/p2_r3.md`), so "after 4 iterations" is our stopping point, not the paper's.
+- Plain CEM (paper Table 8: 0.74) has no result. Its run failed at start-up because of our Hydra override (`~planner.max_iter` cannot delete a null key), and a rerun has not been decided.
 <!-- END p2 -->
 
 Spec: [docs/p2_spec.md](docs/p2_spec.md).
